@@ -5881,19 +5881,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\mbyrd\\.nuget\\packages\\": {}
+    "C:\\Users\\domsb\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
+      "projectUniqueName": "C:\\Users\\domsb\\Documents\\GitHub\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
       "projectName": "ReservationSystemWebAPI",
-      "projectPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
-      "packagesPath": "C:\\Users\\mbyrd\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\obj\\",
+      "projectPath": "C:\\Users\\domsb\\Documents\\GitHub\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
+      "packagesPath": "C:\\Users\\domsb\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\domsb\\Documents\\GitHub\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\mbyrd\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\domsb\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -5918,8 +5923,9 @@
       "restoreAuditProperties": {
         "enableAudit": "true",
         "auditLevel": "low",
-        "auditMode": "direct"
-      }
+        "auditMode": "all"
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -5985,7 +5991,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.401/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

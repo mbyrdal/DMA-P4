@@ -1,44 +1,39 @@
 import React, { useState, useEffect } from 'react';
 
-const initialData = [
-  { id: 1, name: "Tastatur", status: "tilgængelig", quantity: 3 },
-  { id: 2, name: "HDMI-kabel", status: "udlånt", quantity: 0 },
-  { id: 3, name: "Dockingstation", status: "reserveret", quantity: 1 },
-  { id: 4, name: "Mus", status: "tilgængelig", quantity: 5 }
-];
-
 function EquipmentOverview() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("alle");
-  const [equipmentList, setEquipmentList] = useState(initialData);
+  const [equipmentList, setEquipmentList] = useState([]);
   const [myReservation, setMyReservation] = useState([]);
   const [isModified, setIsModified] = useState(false);
-
+  const thStyle = {
+    borderBottom: "1px solid white",
+    padding: "0.5rem",
+    textAlign: "left"
+  };
+  
+  const tdStyle = {
+    padding: "0.5rem",
+    borderBottom: "1px solid #555"
+  };
+  
+  
 
   useEffect(() => {
-    const storedReservation = localStorage.getItem("myReservation");
-    if (storedReservation) {
-      setMyReservation(JSON.parse(storedReservation));
-      console.log("Tidligere reservationer hentet fra localStorage");
-    }
+    fetch("https://localhost:7092/api/backend")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Fejl ved hentning af udstyr");
+        }
+        return response.json();
+      })
+      .then(data => {
+        setEquipmentList(data);
+      })
+      .catch(error => {
+        console.error("Hentning fejlede:", error);
+      });
   }, []);
-  
-  useEffect(() => {
-    const saved = localStorage.getItem("myReservation");
-    if (!saved) {
-      setIsModified(myReservation.length > 0);
-      return;
-    }
-  
-    try {
-      const parsed = JSON.parse(saved);
-      const same = JSON.stringify(parsed) === JSON.stringify(myReservation);
-      setIsModified(!same);
-    } catch (err) {
-      setIsModified(true);
-    }
-  }, [myReservation]);
-  
 
   const handleReserve = (id) => {
     const updatedList = equipmentList.map(item => {
@@ -80,7 +75,6 @@ function EquipmentOverview() {
   };
 
   const handleClearReservation = () => {
-    // Genskab alle reserverede mængder til equipment
     const updatedEquipment = equipmentList.map(equip => {
       const match = myReservation.find(res => res.id === equip.id);
       if (match) {
@@ -100,19 +94,20 @@ function EquipmentOverview() {
       alert("Du har ikke reserveret noget.");
       return;
     }
-  
-    // Gem reservationen i localStorage
+
     localStorage.setItem("myReservation", JSON.stringify(myReservation));
-  
+
     alert("Reservation bekræftet og gemt.");
     console.log("Reservation gemt i localStorage:", myReservation);
-  
+
     setMyReservation([]);
   };
-  
 
   const filteredItems = equipmentList.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+    item.name && typeof item.name === "string"
+      ? item.name.toLowerCase().includes(search.toLowerCase())
+      : false;  
     const matchesFilter = filter === "alle" || item.status === filter;
     return matchesSearch && matchesFilter;
   });
@@ -136,29 +131,28 @@ function EquipmentOverview() {
         <option value="reserveret">Reserveret</option>
       </select>
 
-      <ul style={{ marginTop: "1rem", listStyle: "none", paddingLeft: 0 }}>
-        {filteredItems.map(item => (
-          <li key={item.id} style={{ marginBottom: "1rem" }}>
-            <strong>{item.name}</strong> ({item.status}) – Tilgængelige: {item.quantity}
-            <br />
-            <button
-              onClick={() => handleReserve(item.id)}
-              disabled={item.quantity === 0}
-              style={{
-                marginTop: "0.5rem",
-                padding: "0.4rem 0.8rem",
-                cursor: item.quantity === 0 ? "not-allowed" : "pointer",
-                backgroundColor: item.quantity === 0 ? "#777" : "#4CAF50",
-                color: "white",
-                border: "none",
-                borderRadius: "4px"
-              }}
-            >
-              Reservér
-            </button>
-          </li>
-        ))}
-      </ul>
+      <table style={{ width: "80%", margin: "1rem auto", borderCollapse: "collapse", color: "white" }}>
+  <thead>
+    <tr>
+      <th style={thStyle}>ID</th>
+      <th style={thStyle}>Navn</th>
+      <th style={thStyle}>Antal</th>
+      <th style={thStyle}>Lokation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {equipmentList.map(item => (
+      <tr key={item.id}>
+        <td style={tdStyle}>{item.id}</td>
+        <td style={tdStyle}>{item.navn}</td>
+        <td style={tdStyle}>{item.antal}</td>
+        <td style={tdStyle}>{item.lokation}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
 
       <hr style={{ margin: "2rem 0" }} />
 
@@ -168,56 +162,54 @@ function EquipmentOverview() {
       ) : (
         <>
           <ul style={{ listStyle: "none", paddingLeft: 0, marginTop: "1rem" }}>
-  {myReservation.map(item => (
-    <li
-      key={item.id}
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: "0.8rem"
-      }}
-    >
-      <div style={{ width: "200px", textAlign: "right", paddingRight: "1rem" }}>
-        <strong>{item.name}</strong> – {item.reserved} stk.
-      </div>
-
-      <button
-        onClick={() => handleRemoveItem(item.id)}
-        style={{
-          padding: "0.3rem 0.8rem",
-          backgroundColor: "#D9534F",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontSize: "0.9rem"
-        }}
-      >
-        Fjern én
-      </button>
-    </li>
-  ))}
-</ul>
-
-
-            <button
-                onClick={handleConfirm}
-                disabled={!isModified}
+            {myReservation.map(item => (
+              <li
+                key={item.id}
                 style={{
-                marginTop: "1rem",
-                padding: "0.6rem 1.2rem",
-                backgroundColor: !isModified ? "#999" : "#007BFF",
-                color: "white",
-                border: "none",
-                borderRadius: "5px",
-                marginRight: "1rem",
-                cursor: !isModified ? "not-allowed" : "pointer"
-              }}
-            >
-             Bekræft reservation
-            </button>
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: "0.8rem"
+                }}
+              >
+                <div style={{ width: "200px", textAlign: "right", paddingRight: "1rem" }}>
+                  <strong>{item.name}</strong> – {item.reserved} stk.
+                </div>
 
+                <button
+                  onClick={() => handleRemoveItem(item.id)}
+                  style={{
+                    padding: "0.3rem 0.8rem",
+                    backgroundColor: "#D9534F",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  Fjern én
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            onClick={handleConfirm}
+            disabled={!isModified}
+            style={{
+              marginTop: "1rem",
+              padding: "0.6rem 1.2rem",
+              backgroundColor: !isModified ? "#999" : "#007BFF",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              marginRight: "1rem",
+              cursor: !isModified ? "not-allowed" : "pointer"
+            }}
+          >
+            Bekræft reservation
+          </button>
         </>
       )}
     </div>
