@@ -6,18 +6,17 @@ function EquipmentOverview() {
   const [equipmentList, setEquipmentList] = useState([]);
   const [myReservation, setMyReservation] = useState([]);
   const [isModified, setIsModified] = useState(false);
+
   const thStyle = {
     borderBottom: "1px solid white",
     padding: "0.5rem",
     textAlign: "left"
   };
-  
+
   const tdStyle = {
     padding: "0.5rem",
     borderBottom: "1px solid #555"
   };
-  
-  
 
   useEffect(() => {
     fetch("https://localhost:7092/api/backend")
@@ -37,8 +36,8 @@ function EquipmentOverview() {
 
   const handleReserve = (id) => {
     const updatedList = equipmentList.map(item => {
-      if (item.id === id && item.quantity > 0) {
-        return { ...item, quantity: item.quantity - 1 };
+      if (item.id === id && item.antal > 0) {
+        return { ...item, antal: item.antal - 1 };
       }
       return item;
     });
@@ -50,10 +49,11 @@ function EquipmentOverview() {
       ? myReservation.map(item =>
           item.id === id ? { ...item, reserved: item.reserved + 1 } : item
         )
-      : [...myReservation, { id: selectedItem.id, name: selectedItem.name, reserved: 1 }];
+      : [...myReservation, { id: selectedItem.id, name: selectedItem.navn, reserved: 1 }];
 
     setEquipmentList(updatedList);
     setMyReservation(updatedReservation);
+    setIsModified(true);
   };
 
   const handleRemoveItem = (id) => {
@@ -67,18 +67,19 @@ function EquipmentOverview() {
       : myReservation.filter(item => item.id !== id);
 
     const updatedEquipment = equipmentList.map(item =>
-      item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+      item.id === id ? { ...item, antal: item.antal + 1 } : item
     );
 
     setMyReservation(updatedReservation);
     setEquipmentList(updatedEquipment);
+    setIsModified(true);
   };
 
   const handleClearReservation = () => {
     const updatedEquipment = equipmentList.map(equip => {
       const match = myReservation.find(res => res.id === equip.id);
       if (match) {
-        return { ...equip, quantity: equip.quantity + match.reserved };
+        return { ...equip, antal: equip.antal + match.reserved };
       }
       return equip;
     });
@@ -87,6 +88,7 @@ function EquipmentOverview() {
 
     setEquipmentList(updatedEquipment);
     setMyReservation([]);
+    setIsModified(false);
   };
 
   const handleConfirm = () => {
@@ -101,13 +103,14 @@ function EquipmentOverview() {
     console.log("Reservation gemt i localStorage:", myReservation);
 
     setMyReservation([]);
+    setIsModified(false);
   };
 
   const filteredItems = equipmentList.filter(item => {
     const matchesSearch =
-    item.name && typeof item.name === "string"
-      ? item.name.toLowerCase().includes(search.toLowerCase())
-      : false;  
+      item.navn && typeof item.navn === "string"
+        ? item.navn.toLowerCase().includes(search.toLowerCase())
+        : false;
     const matchesFilter = filter === "alle" || item.status === filter;
     return matchesSearch && matchesFilter;
   });
@@ -124,7 +127,11 @@ function EquipmentOverview() {
         style={{ padding: "0.5rem" }}
       />
 
-      <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ marginLeft: "1rem", padding: "0.5rem" }}>
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        style={{ marginLeft: "1rem", padding: "0.5rem" }}
+      >
         <option value="alle">Alle</option>
         <option value="tilgængelig">Tilgængelig</option>
         <option value="udlånt">Udlånt</option>
@@ -132,27 +139,39 @@ function EquipmentOverview() {
       </select>
 
       <table style={{ width: "80%", margin: "1rem auto", borderCollapse: "collapse", color: "white" }}>
-  <thead>
-    <tr>
-      <th style={thStyle}>ID</th>
-      <th style={thStyle}>Navn</th>
-      <th style={thStyle}>Antal</th>
-      <th style={thStyle}>Lokation</th>
-    </tr>
-  </thead>
-  <tbody>
-    {equipmentList.map(item => (
-      <tr key={item.id}>
-        <td style={tdStyle}>{item.id}</td>
-        <td style={tdStyle}>{item.navn}</td>
-        <td style={tdStyle}>{item.antal}</td>
-        <td style={tdStyle}>{item.lokation}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-
+        <thead>
+          <tr>
+            <th style={thStyle}>ID</th>
+            <th style={thStyle}>Navn</th>
+            <th style={thStyle}>Antal</th>
+            <th style={thStyle}>Lokation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredItems.map(item => (
+            <tr
+              key={item.id}
+              onClick={() => item.antal > 0 && handleReserve(item.id)}
+              style={{
+                cursor: item.antal > 0 ? "pointer" : "not-allowed",
+                backgroundColor: item.antal === 0 ? "#444" : "transparent",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
+              }}
+            >
+              <td style={tdStyle}>{item.id}</td>
+              <td style={tdStyle}>{item.navn}</td>
+              <td style={tdStyle}>{item.antal}</td>
+              <td style={tdStyle}>{item.lokation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <hr style={{ margin: "2rem 0" }} />
 
@@ -194,22 +213,37 @@ function EquipmentOverview() {
             ))}
           </ul>
 
-          <button
-            onClick={handleConfirm}
-            disabled={!isModified}
-            style={{
-              marginTop: "1rem",
-              padding: "0.6rem 1.2rem",
-              backgroundColor: !isModified ? "#999" : "#007BFF",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              marginRight: "1rem",
-              cursor: !isModified ? "not-allowed" : "pointer"
-            }}
-          >
-            Bekræft reservation
-          </button>
+          <div style={{ marginTop: "1rem" }}>
+            <button
+              onClick={handleConfirm}
+              disabled={!isModified}
+              style={{
+                padding: "0.6rem 1.2rem",
+                backgroundColor: !isModified ? "#999" : "#007BFF",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                marginRight: "1rem",
+                cursor: !isModified ? "not-allowed" : "pointer"
+              }}
+            >
+              Bekræft reservation
+            </button>
+
+            <button
+              onClick={handleClearReservation}
+              style={{
+                padding: "0.6rem 1.2rem",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer"
+              }}
+            >
+              Ryd reservation
+            </button>
+          </div>
         </>
       )}
     </div>

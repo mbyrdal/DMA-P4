@@ -40,3 +40,15 @@
 .read-the-docs {
   color: #888;
 }
+
+style={{
+  cursor: item.antal > 0 ? "pointer" : "not-allowed",
+  backgroundColor: item.antal === 0 ? "#444" : "transparent",
+  transition: "background 0.2s",
+}}
+onMouseEnter={(e) => {
+  if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
+}}
+onMouseLeave={(e) => {
+  e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
+}}
