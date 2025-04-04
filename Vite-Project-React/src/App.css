@@ -1,54 +1,32 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Login box styles */
+.login-box {
+  background-color: #333;
+  color: white;
+  border-radius: 8px;
+  padding: 2rem;  /* Ensure padding is uniform on all sides */
+  width: 100%;
+  max-width: 400px;  /* Limit the width for a more visually pleasant size */
+  margin: 0 auto;  /* Center the login box */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* For buttons and inputs inside the login box */
+.login-box input,
+.login-box button {
+  width: 100%;  /* Make them take up the full width */
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  background-color: #222;
+  border: none;
+  border-radius: 4px;
+  color: white;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.login-box button {
+  background-color: #007BFF; /* Blue button */
+  cursor: pointer;
 }
 
-.card {
-  padding: 2em;
+/* Hover effect for button */
+.login-box button:hover {
+  background-color: #0056b3;
 }
-
-.read-the-docs {
-  color: #888;
-}
-
-style={{
-  cursor: item.antal > 0 ? "pointer" : "not-allowed",
-  backgroundColor: item.antal === 0 ? "#444" : "transparent",
-  transition: "background 0.2s",
-}}
-onMouseEnter={(e) => {
-  if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
-}}
-onMouseLeave={(e) => {
-  e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
-}}
