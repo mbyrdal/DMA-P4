@@ -1,0 +1,37 @@
+# === Node / Vue ===
+node_modules/
+dist/
+.env
+.env.*
+
+# === VS Code / VS Project ===
+.vscode/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# === C# / .NET ===
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.mdb
+*.log
+
+# === Database / Temp ===
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sdf
+
+# === Git System Files ===
+*.vsidx
+
+# === OS / Misc ===
+.DS_Store
+Thumbs.db
