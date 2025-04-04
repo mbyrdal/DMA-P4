@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReservationSystemWebAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d342f037b18c7dd3f3fcf30a02adf187fd94b692")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+697b75d5af59cc9a632342c7a7394389c0be65a8")]
 [assembly: System.Reflection.AssemblyProductAttribute("ReservationSystemWebAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReservationSystemWebAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

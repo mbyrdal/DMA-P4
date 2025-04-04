@@ -4,7 +4,7 @@
     
     <!-- Search Bar -->
     <form id="search">
-      Search: <input name="query" v-model="searchQuery">
+      Søg efter udstyr: <input name="query" v-model="searchQuery">
     </form>
 
     <!-- Table for displaying items -->
@@ -12,9 +12,9 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Name</th>
-          <th>Amount</th>
-          <th>Location</th>
+          <th>Navn</th>
+          <th>Antal</th>
+          <th>Placering</th>
         </tr>
       </thead>
       <tbody>

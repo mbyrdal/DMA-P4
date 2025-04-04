@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Q6KYVTvbOzk=",
+  "dgSpecHash": "vJGn7ec1SW8=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\Vite-Project-React\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
+  "projectFilePath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mbyrd\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\mbyrd\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

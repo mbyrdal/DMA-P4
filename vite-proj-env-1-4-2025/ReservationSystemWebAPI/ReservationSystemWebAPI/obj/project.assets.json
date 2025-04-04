@@ -5886,11 +5886,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\Vite-Project-React\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
+      "projectUniqueName": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
       "projectName": "ReservationSystemWebAPI",
-      "projectPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\Vite-Project-React\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
+      "projectPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\ReservationSystemWebAPI.csproj",
       "packagesPath": "C:\\Users\\mbyrd\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\Vite-Project-React\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\obj\\",
+      "outputPath": "C:\\Users\\mbyrd\\Desktop\\Development\\DMA-P4\\vite-proj-env-1-4-2025\\ReservationSystemWebAPI\\ReservationSystemWebAPI\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\mbyrd\\AppData\\Roaming\\NuGet\\NuGet.Config",
