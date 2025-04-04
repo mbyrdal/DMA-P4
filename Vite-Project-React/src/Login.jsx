@@ -27,7 +27,7 @@ function Login({ onLogin }) {
         />
         <button type="submit">Log ind</button>
       </form>
-      {error && <p style={{ color: "red", marginTop: "1rem" }}>{error}</p>}
+      {error && <p>{error}</p>}
     </div>
   );
 }

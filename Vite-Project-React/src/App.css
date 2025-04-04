@@ -1,32 +1,80 @@
-/* Login box styles */
+/* Login Box Styling */
 .login-box {
-  background-color: #333;
-  color: white;
-  border-radius: 8px;
-  padding: 2rem;  /* Ensure padding is uniform on all sides */
+  background-color: #2c2c2c;  /* Darker background for better contrast */
+  color: #f0f0f0;  /* Lighter text color */
+  border-radius: 10px;  /* Rounded corners for the box */
+  padding: 3rem 2rem;  /* Add padding to create space inside the box */
   width: 100%;
-  max-width: 400px;  /* Limit the width for a more visually pleasant size */
-  margin: 0 auto;  /* Center the login box */
+  max-width: 420px;  /* Limit the width for a nicer appearance */
+  margin: 0 auto;  /* Center the box */
+  box-shadow: 0px 4px 30px rgba(0, 0, 0, 0.3);  /* Shadow for depth */
+  background: linear-gradient(145deg, #3b3b3b, #2a2a2a);  /* Subtle gradient for depth */
 }
 
-/* For buttons and inputs inside the login box */
-.login-box input,
+/* Title of the Login box */
+.login-box h2 {
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  text-align: center;
+  color: #ffffff;  /* Bright color for text */
+}
+
+/* Input Fields Styling */
+.login-box input {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1.5rem;  /* More space between inputs */
+  background-color: #444;  /* Darker input background */
+  border: 1px solid #555;  /* Soft border for input */
+  border-radius: 6px;
+  color: #f0f0f0;  /* White text */
+  font-size: 1rem;  /* Readable font size */
+  outline: none;  /* Remove default outline */
+  transition: all 0.3s ease;  /* Smooth transition for focus effects */
+}
+
+/* Focus effect on input fields */
+.login-box input:focus {
+  border-color: #007bff;  /* Blue border on focus */
+  background-color: #333;  /* Darken background on focus */
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);  /* Subtle glow effect */
+}
+
+/* Button Styling */
 .login-box button {
-  width: 100%;  /* Make them take up the full width */
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  background-color: #222;
-  border: none;
-  border-radius: 4px;
+  width: 100%;
+  padding: 1rem;
+  background-color: #007BFF;  /* Blue button color */
   color: white;
-}
-
-.login-box button {
-  background-color: #007BFF; /* Blue button */
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;  /* Larger font for the button */
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;  /* Smooth transition effects */
 }
 
-/* Hover effect for button */
+/* Button hover effect */
 .login-box button:hover {
-  background-color: #0056b3;
+  background-color: #0056b3;  /* Darker blue on hover */
+  transform: translateY(-2px);  /* Slight lift effect */
+}
+
+/* Button focus effect */
+.login-box button:focus {
+  outline: 4px solid rgba(0, 123, 255, 0.5);  /* Blue outline on focus */
+}
+
+/* Error message styling */
+.login-box p {
+  color: red;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Add a background gradient to the entire body */
+body {
+  background: linear-gradient(135deg, #0a0a0a, #242424);  /* Dark gradient background */
 }
