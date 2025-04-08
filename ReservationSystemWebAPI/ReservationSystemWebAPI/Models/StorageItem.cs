@@ -1,6 +1,6 @@
 ﻿namespace ReservationSystemWebAPI.Models
 {
-    public class WEXO_DEPOT
+    public class StorageItem
     {
         public int ID { get; set; }
         public string Navn { get; set; } = string.Empty;
