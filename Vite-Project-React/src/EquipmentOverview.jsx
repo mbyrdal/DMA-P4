@@ -11,12 +11,15 @@ function EquipmentOverview() {
   const thStyle = {
     borderBottom: "1px solid white",
     padding: "0.5rem",
-    textAlign: "left"
+    textAlign: "left",
+    width: "25%" // Ensure header columns take up equal width
   };
-
+  
   const tdStyle = {
     padding: "0.5rem",
-    borderBottom: "1px solid #555"
+    borderBottom: "1px solid #555",
+    textAlign: "left", // Ensuring text is aligned to the left
+    width: "25%" // Ensure data cells take up equal width
   };
 
   useEffect(() => {
@@ -217,7 +220,8 @@ function EquipmentOverview() {
         <option value="reserveret">Reserveret</option>
       </select>
 
-      <table style={{ width: "80%", margin: "1rem auto", borderCollapse: "collapse", color: "white" }}>
+      <table style={{ width: "80%", margin: "1rem auto", 
+        borderCollapse: "collapse", color: "white", tableLayout: "fixed" }}>
         <thead>
           <tr>
             <th style={thStyle}>ID</th>
