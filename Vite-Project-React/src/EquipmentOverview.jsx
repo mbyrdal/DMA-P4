@@ -8,7 +8,6 @@ function EquipmentOverview() {
   const [myReservation, setMyReservation] = useState([]);
   const [isModified, setIsModified] = useState(false);
 
-  // Stilvalg til tabelvisning
   const thStyle = {
     borderBottom: "1px solid white",
     padding: "0.5rem",
@@ -20,7 +19,6 @@ function EquipmentOverview() {
     borderBottom: "1px solid #555"
   };
 
-  // Hent udstyrsliste fra backend ved komponent-mount
   useEffect(() => {
     fetch("https://localhost:7092/api/backend")
       .then(response => {
@@ -37,14 +35,12 @@ function EquipmentOverview() {
       });
   }, []);
 
-  // Hent reservation fra localStorage ved komponent-mount (hvis den stadig er gyldig)
   useEffect(() => {
     const saved = localStorage.getItem("myReservation");
     if (!saved) return;
 
     try {
       const parsed = JSON.parse(saved);
-
       if (!parsed.createdAt || !parsed.items) {
         console.warn("Gemte data har ikke forventet struktur.");
         return;
@@ -65,7 +61,6 @@ function EquipmentOverview() {
     }
   }, []);
 
-  // Hjælpefunktion til at gemme reservation i localStorage med timestamp
   const updateLocalStorageReservation = (updatedReservation) => {
     const reservationWithTimestamp = {
       createdAt: new Date().toISOString(),
@@ -74,7 +69,6 @@ function EquipmentOverview() {
     localStorage.setItem("myReservation", JSON.stringify(reservationWithTimestamp));
   };
 
-  // Håndter klik på udstyr for at reservere én enhed
   const handleReserve = (id) => {
     const updatedList = equipmentList.map(item => {
       if (item.id === id && item.antal > 0) {
@@ -98,7 +92,6 @@ function EquipmentOverview() {
     updateLocalStorageReservation(updatedReservation);
   };
 
-  // Håndter fjernelse af én reserveret enhed
   const handleRemoveItem = (id) => {
     const itemToRemove = myReservation.find(item => item.id === id);
     if (!itemToRemove) return;
@@ -119,7 +112,6 @@ function EquipmentOverview() {
     updateLocalStorageReservation(updatedReservation);
   };
 
-  // Håndter "ryd alt"-funktion for reservationer
   const handleClearReservation = () => {
     const updatedEquipment = equipmentList.map(equip => {
       const match = myReservation.find(res => res.id === equip.id);
@@ -136,23 +128,48 @@ function EquipmentOverview() {
     setIsModified(false);
   };
 
-  // Bekræft reservation og gem i localStorage
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (myReservation.length === 0) {
       alert("Du har ikke reserveret noget.");
       return;
     }
+  
+    try {
+      for (const reservation of myReservation) {
+        const originalItem = equipmentList.find(item => item.id === reservation.id);
+        if (!originalItem) continue;
+  
+        const updatedItem = {
+          ...originalItem,
+          antal: originalItem.antal // Do NOT subtract again
+        };
+  
+        const response = await fetch(`https://localhost:7092/api/backend/${updatedItem.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(updatedItem)
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Fejl ved opdatering af udstyr med ID ${updatedItem.id}`);
+        }
+      }
+  
+      updateLocalStorageReservation([]); // clear localStorage
+      setMyReservation([]);              // clear UI
+      setIsModified(false);              // reset confirmation flag
+  
+      alert("Reservation bekræftet og opdateret i databasen.");
+      console.log("Reservation gemt i localStorage:", myReservation);
+  
+    } catch (error) {
+      console.error("Fejl under bekræftelse:", error);
+      alert("Der opstod en fejl ved bekræftelse af reservation.");
+    }
+  };  
 
-    updateLocalStorageReservation(myReservation);
-
-    alert("Reservation bekræftet og gemt.");
-    console.log("Reservation gemt i localStorage:", myReservation);
-
-    //setMyReservation([]); (Dette tager vi ud, så man ikke skal refresh siden for at se ændringerne)
-    setIsModified(false);
-  };
-
-  // Filtrer udstyr baseret på søgning og valgt filter
   const filteredItems = equipmentList.filter(item => {
     const matchesSearch =
       item.navn && typeof item.navn === "string"
@@ -164,7 +181,6 @@ function EquipmentOverview() {
 
   return (
     <div style={{ padding: "1rem", fontFamily: "Arial", color: "white", textAlign: "center" }}>
-      {/* Knappen øverst til højre til lånehistorik */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
         <Link to="/history">
           <button style={{
@@ -182,7 +198,6 @@ function EquipmentOverview() {
 
       <h2>Lageroversigt</h2>
 
-      {/* Søg og filter */}
       <input
         type="text"
         placeholder="Søg udstyr..."
@@ -202,7 +217,6 @@ function EquipmentOverview() {
         <option value="reserveret">Reserveret</option>
       </select>
 
-      {/* Lageroversigt tabel */}
       <table style={{ width: "80%", margin: "1rem auto", borderCollapse: "collapse", color: "white" }}>
         <thead>
           <tr>
@@ -240,7 +254,6 @@ function EquipmentOverview() {
 
       <hr style={{ margin: "2rem 0" }} />
 
-      {/* Reservationssektion */}
       <h3>Din reservation</h3>
       {myReservation.length === 0 ? (
         <p>Ingen varer reserveret endnu.</p>
