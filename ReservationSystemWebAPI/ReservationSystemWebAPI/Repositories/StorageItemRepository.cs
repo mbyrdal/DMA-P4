@@ -6,6 +6,10 @@ using ReservationSystemWebAPI.Models;
 
 namespace ReservationSystemWebAPI.Repositories
 {
+    /// <summary>
+    /// This class' main purpose is to handle error handling and business logic applied to the system. <br />
+    /// A contract (interface) IStorageItemRepository is used to define the methods that this class implements. <br />
+    /// </summary>
     public class StorageItemRepository : IStorageItemRepository
     {
         private readonly ReservationDbContext _dbContext;
