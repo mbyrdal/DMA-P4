@@ -13,6 +13,18 @@ namespace ReservationSystemWebAPI.DataAccess
         }
         
         public DbSet<StorageItem> WEXO_DEPOT { get; set; }
-            
+        public DbSet<Reservation> Reservations { get; set; }
+        public DbSet<ReservationItem> ReservationItems { get; set; }
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Reservation>()
+                .HasMany(r => r.Items)
+                .WithOne(i => i.Reservation)
+                .HasForeignKey(i => i.ReservationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+
     }
 }

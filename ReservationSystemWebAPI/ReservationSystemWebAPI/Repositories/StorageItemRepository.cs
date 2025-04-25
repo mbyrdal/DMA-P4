@@ -116,7 +116,7 @@ namespace ReservationSystemWebAPI.Repositories
         {
             try
             {
-                return await _dbContext.WEXO_DEPOT.AnyAsync(e => e.ID == id);
+                return await _dbContext.WEXO_DEPOT.AnyAsync(e => e.Id == id);
             }
             catch (Exception ex)
             {

@@ -62,7 +62,7 @@ namespace ReservationSystemWebAPI.Controllers
             _dbContext.WEXO_DEPOT.Add(newItem);
             await _dbContext.SaveChangesAsync(); // SQL INSERT
 
-            return CreatedAtAction(nameof(GetItem), new { id = newItem.ID }, newItem);
+            return CreatedAtAction(nameof(GetItem), new { id = newItem.Id }, newItem);
         }
 
         // PUT: api/Backend/5
@@ -77,7 +77,7 @@ namespace ReservationSystemWebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItem updatedItem) // TODO: Add proper error handling.
         {
-            if (id != updatedItem.ID)
+            if (id != updatedItem.Id)
             {
                 return BadRequest("ID mismatch.");
             }
@@ -92,7 +92,7 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_dbContext.WEXO_DEPOT.Any(e => e.ID == id))
+                if (!_dbContext.WEXO_DEPOT.Any(e => e.Id == id))
                 {
                     return NotFound();
                 }

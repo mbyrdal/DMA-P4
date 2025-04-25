@@ -12,65 +12,48 @@ function EquipmentOverview() {
     borderBottom: "1px solid white",
     padding: "0.5rem",
     textAlign: "left",
-    width: "25%" // Ensure header columns take up equal width
+    width: "25%"
   };
-  
+
   const tdStyle = {
     padding: "0.5rem",
     borderBottom: "1px solid #555",
-    textAlign: "left", // Ensuring text is aligned to the left
-    width: "25%" // Ensure data cells take up equal width
+    textAlign: "left",
+    width: "25%"
   };
 
   useEffect(() => {
-    fetch("https://localhost:7092/api/backend")
-      .then(response => {
+    fetch("https://localhost:7092/api/reservation")
+      .then((response) => {
         if (!response.ok) {
-          throw new Error("Fejl ved hentning af udstyr");
+          throw new Error("Kunne ikke hente reservation");
         }
         return response.json();
       })
-      .then(data => {
-        setEquipmentList(data);
+      .then((data) => {
+        if (data.length > 0) {
+          const latest = data[data.length - 1];
+          if (latest && latest.items && Array.isArray(latest.items)) {
+            setMyReservation(latest.items);
+          }
+        }
       })
-      .catch(error => {
-        console.error("Hentning fejlede:", error);
+      .catch((error) => {
+        console.error("Fejl ved hentning af reservation:", error);
       });
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("myReservation");
-    if (!saved) return;
-
-    try {
-      const parsed = JSON.parse(saved);
-      if (!parsed.createdAt || !parsed.items) {
-        console.warn("Gemte data har ikke forventet struktur.");
-        return;
-      }
-
-      const createdAt = new Date(parsed.createdAt);
-      const now = new Date();
-      const diffHours = (now - createdAt) / (1000 * 60 * 60);
-
-      if (diffHours >= 24) {
-        console.log("Reservation er mere end 24 timer gammel. Den fjernes.");
-        localStorage.removeItem("myReservation");
-      } else {
-        setMyReservation(parsed.items);
-      }
-    } catch (error) {
-      console.error("Fejl ved parsing af reservation fra localStorage:", error);
-    }
+    fetch("https://localhost:7092/api/backend")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Kunne ikke hente udstyr");
+        }
+        return response.json();
+      })
+      .then((data) => setEquipmentList(data))
+      .catch((error) => console.error("Fejl ved hentning af udstyr:", error));
   }, []);
-
-  const updateLocalStorageReservation = (updatedReservation) => {
-    const reservationWithTimestamp = {
-      createdAt: new Date().toISOString(),
-      items: updatedReservation
-    };
-    localStorage.setItem("myReservation", JSON.stringify(reservationWithTimestamp));
-  };
 
   const handleReserve = (id) => {
     const updatedList = equipmentList.map(item => {
@@ -81,97 +64,108 @@ function EquipmentOverview() {
     });
 
     const selectedItem = equipmentList.find(item => item.id === id);
-    const existing = myReservation.find(item => item.id === id);
+    const existing = myReservation.find(item => item.equipmentName === selectedItem.navn);
 
     const updatedReservation = existing
       ? myReservation.map(item =>
-          item.id === id ? { ...item, reserved: item.reserved + 1 } : item
+          item.equipmentName === selectedItem.navn
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         )
-      : [...myReservation, { id: selectedItem.id, name: selectedItem.navn, reserved: 1 }];
+      : [...myReservation, { equipmentName: selectedItem.navn, quantity: 1 }];
 
     setEquipmentList(updatedList);
     setMyReservation(updatedReservation);
     setIsModified(true);
-    updateLocalStorageReservation(updatedReservation);
   };
 
-  const handleRemoveItem = (id) => {
-    const itemToRemove = myReservation.find(item => item.id === id);
+  const handleRemoveItem = (equipmentName) => {
+    const itemToRemove = myReservation.find(item => item.equipmentName === equipmentName);
     if (!itemToRemove) return;
 
-    const updatedReservation = itemToRemove.reserved > 1
+    const updatedReservation = itemToRemove.quantity > 1
       ? myReservation.map(item =>
-          item.id === id ? { ...item, reserved: item.reserved - 1 } : item
+          item.equipmentName === equipmentName
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
         )
-      : myReservation.filter(item => item.id !== id);
+      : myReservation.filter(item => item.equipmentName !== equipmentName);
 
     const updatedEquipment = equipmentList.map(item =>
-      item.id === id ? { ...item, antal: item.antal + 1 } : item
+      item.navn === equipmentName ? { ...item, antal: item.antal + 1 } : item
     );
 
     setMyReservation(updatedReservation);
     setEquipmentList(updatedEquipment);
     setIsModified(true);
-    updateLocalStorageReservation(updatedReservation);
   };
 
   const handleClearReservation = () => {
-    const updatedEquipment = equipmentList.map(equip => {
-      const match = myReservation.find(res => res.id === equip.id);
-      if (match) {
-        return { ...equip, antal: equip.antal + match.reserved };
-      }
-      return equip;
-    });
-
-    localStorage.removeItem("myReservation");
-
-    setEquipmentList(updatedEquipment);
-    setMyReservation([]);
-    setIsModified(false);
+    fetch("https://localhost:7092/api/reservation")
+      .then(res => res.json())
+      .then(data => {
+        if (data.length === 0) return;
+        const latest = data[data.length - 1];
+  
+        return fetch(`https://localhost:7092/api/reservation/${latest.id}`, {
+          method: "DELETE"
+        });
+      })
+      .then(() => {
+        setMyReservation([]);
+        setIsModified(false);
+        alert("Reservation slettet.");
+      })
+      .catch(err => {
+        console.error("Fejl ved sletning af reservation:", err);
+        alert("Kunne ikke slette reservation.");
+      });
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     if (myReservation.length === 0) {
       alert("Du har ikke reserveret noget.");
       return;
     }
   
-    try {
-      for (const reservation of myReservation) {
-        const originalItem = equipmentList.find(item => item.id === reservation.id);
-        if (!originalItem) continue;
+    const reservationData = {
+      userName: "MidlertidigBruger",
+      items: myReservation
+    };
   
-        const updatedItem = {
-          ...originalItem,
-          antal: originalItem.antal // Do NOT subtract again
-        };
+    fetch("https://localhost:7092/api/reservation", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(reservationData)
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Noget gik galt ved oprettelse af reservation.");
+        return res.json();
+      })
+      .then(() => {
+        alert("Reservation oprettet!");
+        setIsModified(false);
   
-        const response = await fetch(`https://localhost:7092/api/backend/${updatedItem.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(updatedItem)
-        });
-  
-        if (!response.ok) {
-          throw new Error(`Fejl ved opdatering af udstyr med ID ${updatedItem.id}`);
-        }
-      }
-  
-      updateLocalStorageReservation([]); // clear localStorage
-      setMyReservation([]);              // clear UI
-      setIsModified(false);              // reset confirmation flag
-  
-      alert("Reservation bekræftet og opdateret i databasen.");
-      console.log("Reservation gemt i localStorage:", myReservation);
-  
-    } catch (error) {
-      console.error("Fejl under bekræftelse:", error);
-      alert("Der opstod en fejl ved bekræftelse af reservation.");
-    }
-  };  
+        // Den nye reservation hentes for at opdatere visningen
+        fetch("https://localhost:7092/api/reservation")
+          .then(res => res.json())
+          .then(data => {
+            if (data.length > 0) {
+              const latest = data[data.length - 1];
+              if (latest?.items && Array.isArray(latest.items)) {
+                setMyReservation(latest.items);
+              }
+            }
+          });
+      })
+      .catch(err => {
+        console.error("Fejl ved API-kald:", err);
+        alert("Kunne ikke oprette reservation.");
+      });
+  };
+   
 
   const filteredItems = equipmentList.filter(item => {
     const matchesSearch =
@@ -220,8 +214,7 @@ function EquipmentOverview() {
         <option value="reserveret">Reserveret</option>
       </select>
 
-      <table style={{ width: "80%", margin: "1rem auto", 
-        borderCollapse: "collapse", color: "white", tableLayout: "fixed" }}>
+      <table style={{ width: "80%", margin: "1rem auto", borderCollapse: "collapse", color: "white", tableLayout: "fixed" }}>
         <thead>
           <tr>
             <th style={thStyle}>ID</th>
@@ -266,7 +259,7 @@ function EquipmentOverview() {
           <ul style={{ listStyle: "none", paddingLeft: 0, marginTop: "1rem" }}>
             {myReservation.map(item => (
               <li
-                key={item.id}
+                key={item.equipmentName}
                 style={{
                   display: "flex",
                   justifyContent: "center",
@@ -275,11 +268,11 @@ function EquipmentOverview() {
                 }}
               >
                 <div style={{ width: "200px", textAlign: "right", paddingRight: "1rem" }}>
-                  <strong>{item.name}</strong> – {item.reserved} stk.
+                  <strong>{item.equipmentName}</strong> – {item.quantity} stk.
                 </div>
 
                 <button
-                  onClick={() => handleRemoveItem(item.id)}
+                  onClick={() => handleRemoveItem(item.equipmentName)}
                   style={{
                     padding: "0.3rem 0.8rem",
                     backgroundColor: "#D9534F",
