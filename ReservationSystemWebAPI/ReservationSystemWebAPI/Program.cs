@@ -17,9 +17,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin()
-        .AllowAnyMethod()
-        .AllowAnyHeader());
+    options.AddPolicy("AllowAll", policy => 
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
 builder.Services.AddDbContext<ReservationDbContext>(options =>

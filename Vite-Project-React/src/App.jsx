@@ -6,6 +6,8 @@ import LoanHistory from './LoanHistory';
 import AdminLogin from './AdminLogin'; // Tilføjet AdminLogin
 import AdminDashboard from './AdminDashboard'; // Tilføjet AdminDashboard
 import LogoutButton from './LogoutButton';
+import QRCodePage from "./pages/QRCodePage";
+
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -80,6 +82,24 @@ function App() {
         />
       </Routes>
     </div>
+  );
+
+  // QR Code Scanner route
+
+  return (
+    <Routes>
+      {/* ...existing routes... */}
+      <Route
+        path="/qr-scanner"
+        element={
+          isLoggedIn ? (
+            <QRCodePage />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+    </Routes>
   );
 }
 

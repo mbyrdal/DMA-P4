@@ -19,6 +19,8 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="2.15.2" />
     <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="2.15.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="ZXing.Net" Version="0.16.10" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.13" />
   </ItemGroup>
 
   <ItemGroup>
