@@ -89,17 +89,17 @@ function App() {
   return (
     <Routes>
       {/* ...existing routes... */}
-      <Route
-        path="/qr-scanner"
-        element={
-          isLoggedIn ? (
-            <QRCodePage />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-    </Routes>
+        <Route
+          path="/qr-scanner"
+          element={
+            isLoggedIn ? (
+              <QRCodePage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+      </Routes>
   );
 }
 
