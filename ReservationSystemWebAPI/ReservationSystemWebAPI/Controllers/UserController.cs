@@ -21,7 +21,7 @@ namespace ReservationSystemWebAPI.Controllers
         public UserController(ReservationDbContext context, IConfiguration config)
         {
             _context = context;
-            _config = config;
+            _config = config; // Configuration for JWT using appsettings.json
         }
 
         // GET: api/User
