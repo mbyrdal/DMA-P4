@@ -4,6 +4,10 @@ using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
 using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -12,10 +16,12 @@ namespace ReservationSystemWebAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly ReservationDbContext _context;
+        private readonly IConfiguration _config;
 
-        public UserController(ReservationDbContext context)
+        public UserController(ReservationDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         // GET: api/User
@@ -100,13 +106,45 @@ namespace ReservationSystemWebAPI.Controllers
                 return Unauthorized("Invalid password match. Please try again.");
             }
 
+            // Generate JWT token after successful login
+            var token = GenerateJwtToken(tempUser);
+
             return Ok(new
             {
                 Id = tempUser.Id,
                 Name = tempUser.Name,
                 Role = tempUser.Role,
-                Email = tempUser.Email
+                Email = tempUser.Email,
+                Token = token
             });
+        }
+
+        // Helper method to generate JWT token
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _config.GetSection("JwtSettings");
+            var secretKey = jwtSettings["Secret"];
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Name, user.Name),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())  // JWT ID claim
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpiryMinutes"])),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
