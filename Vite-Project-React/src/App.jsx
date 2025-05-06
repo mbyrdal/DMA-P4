@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './Login';
 import EquipmentOverview from './EquipmentOverview';
-import LogoutButton from './LogoutButton';
 import LoanHistory from './LoanHistory';
+import AdminLogin from './AdminLogin'; // Tilføjet AdminLogin
+import AdminDashboard from './AdminDashboard'; // Tilføjet AdminDashboard
+import LogoutButton from './LogoutButton';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false); // Ny admin login state
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const adminLoggedIn = localStorage.getItem("isAdminLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
+    setIsAdminLoggedIn(adminLoggedIn);
     setIsLoading(false);
   }, []);
 
@@ -22,9 +27,17 @@ function App() {
     navigate("/");
   };
 
+  const handleAdminLogin = () => {
+    setIsAdminLoggedIn(true);
+    localStorage.setItem("isAdminLoggedIn", "true");
+    navigate("/admin-dashboard");
+  };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setIsAdminLoggedIn(false);
     localStorage.setItem("isLoggedIn", "false");
+    localStorage.setItem("isAdminLoggedIn", "false");
     navigate("/login");
   };
 
@@ -34,6 +47,7 @@ function App() {
     <div className="main-container">
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/admin-login" element={<AdminLogin onAdminLogin={handleAdminLogin} />} />
         <Route
           path="/history"
           element={isLoggedIn ? <LoanHistory /> : <Navigate to="/login" />}
@@ -48,6 +62,19 @@ function App() {
               </>
             ) : (
               <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            isAdminLoggedIn ? (
+              <>
+                <AdminDashboard />
+                <LogoutButton onLogout={handleLogout} />
+              </>
+            ) : (
+              <Navigate to="/admin-login" />
             )
           }
         />

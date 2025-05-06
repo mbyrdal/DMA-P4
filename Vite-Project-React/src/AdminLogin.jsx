@@ -1,23 +1,23 @@
 import { Link } from "react-router-dom";
 import React, { useState } from "react";
 
-function Login({ onLogin }) {
-  const [code, setCode] = useState("");
+function AdminLogin({ onAdminLogin }) {
+  const [adminCode, setAdminCode] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (code === "1234") {
-      onLogin();
-      localStorage.setItem("isLoggedIn", "true");
+    if (adminCode === "admin1234") {
+      onAdminLogin();
+      localStorage.setItem("isAdminLoggedIn", "true");
       setError("");
     } else {
-      setError("Forkert kode. Prøv igen.");
+      setError("Forkert admin-kode. Prøv igen.");
     }
   };
 
   return (
-    <div
+    <div 
       style={{
         fontFamily: "Arial",
         minHeight: "100vh",
@@ -26,15 +26,15 @@ function Login({ onLogin }) {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: "#121212", // mørk baggrund
+        backgroundColor: "#121212", // evt. samme baggrundsfarve som Main Login
         color: "white",
       }}
     >
-      {/* Admin Login knap oppe i højre hjørne */}
+      {/* Tilbage-knap oppe i højre hjørne */}
       <div style={{ position: "absolute", top: "20px", right: "20px" }}>
-        <Link to="/admin-login">
+        <Link to="/login">
           <button
-            style={{
+            style={{    
               fontFamily: "Arial",
               backgroundColor: "#6c757d",
               color: "white",
@@ -44,19 +44,19 @@ function Login({ onLogin }) {
               cursor: "pointer",
             }}
           >
-            Admin Login
+            Tilbage
           </button>
         </Link>
       </div>
 
       <div style={{ backgroundColor: "#1e1e1e", padding: "2rem", borderRadius: "10px" }}>
-        <h2>Log ind</h2>
+        <h2>Admin Log ind</h2>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
           <input
             type="password"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Indtast kode"
+            value={adminCode}
+            onChange={(e) => setAdminCode(e.target.value)}
+            placeholder="Indtast admin-kode"
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
           />
           <br />
@@ -82,4 +82,4 @@ function Login({ onLogin }) {
   );
 }
 
-export default Login;
+export default AdminLogin;
