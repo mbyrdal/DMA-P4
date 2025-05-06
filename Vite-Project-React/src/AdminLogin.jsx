@@ -5,6 +5,8 @@ function AdminLogin({ onAdminLogin }) {
   const [adminCode, setAdminCode] = useState("");
   const [error, setError] = useState("");
 
+
+  // HARDCODED ADMIN KODE TIL LOGIN - SKAL FJERNES
   const handleSubmit = (e) => {
     e.preventDefault();
     if (adminCode === "admin1234") {

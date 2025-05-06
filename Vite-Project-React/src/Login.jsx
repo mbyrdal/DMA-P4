@@ -5,6 +5,7 @@ function Login({ onLogin }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
+  // HARDCODED KODE TIL LOGIN - SKAL FJERNES
   const handleSubmit = (e) => {
     e.preventDefault();
     if (code === "1234") {
