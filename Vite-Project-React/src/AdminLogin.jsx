@@ -2,22 +2,41 @@ import { Link } from "react-router-dom";
 import React, { useState } from "react";
 
 function AdminLogin({ onAdminLogin }) {
-  const [adminCode, setAdminCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (adminCode === "admin1234") {
+    try {
+      const response = await fetch("/api/User/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        setError(errText);
+        return;
+      }
+
+      const user = await response.json();
+      if (user.role !== "admin") {
+        setError("Du har ikke administratorrettigheder.");
+        return;
+      }
+
       onAdminLogin();
       localStorage.setItem("isAdminLoggedIn", "true");
       setError("");
-    } else {
-      setError("Forkert admin-kode. Prøv igen.");
+    } catch (error) {
+      setError("Login-fejl. Prøv igen.");
     }
   };
 
   return (
-    <div 
+    <div
       style={{
         fontFamily: "Arial",
         minHeight: "100vh",
@@ -26,15 +45,14 @@ function AdminLogin({ onAdminLogin }) {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: "#121212", // evt. samme baggrundsfarve som Main Login
+        backgroundColor: "#121212",
         color: "white",
       }}
     >
-      {/* Tilbage-knap oppe i højre hjørne */}
       <div style={{ position: "absolute", top: "20px", right: "20px" }}>
         <Link to="/login">
           <button
-            style={{    
+            style={{
               fontFamily: "Arial",
               backgroundColor: "#6c757d",
               color: "white",
@@ -53,13 +71,19 @@ function AdminLogin({ onAdminLogin }) {
         <h2>Admin Log ind</h2>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
           <input
-            type="password"
-            value={adminCode}
-            onChange={(e) => setAdminCode(e.target.value)}
-            placeholder="Indtast admin-kode"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
           />
-          <br />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Adgangskode"
+            style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+          />
           <button
             type="submit"
             style={{

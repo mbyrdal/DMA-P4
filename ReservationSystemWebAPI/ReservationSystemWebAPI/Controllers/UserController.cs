@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
+using BCrypt.Net;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -72,6 +73,33 @@ namespace ReservationSystemWebAPI.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // POST: api/User/login
+        [HttpPost("login")]
+        public async Task<ActionResult<User>> Login([FromBody] User userDetails)
+        {
+            User tempUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == userDetails.Email);
+
+            if (tempUser == null)
+            {
+                return NotFound($"User was not found in the database.");
+            }
+
+            // Check if hashed password matches the password stored in the database
+            bool passwordMatch = BCrypt.Net.BCrypt.Verify(tempUser.Password, userDetails.Password);
+            if (!passwordMatch)
+            {
+                return Unauthorized("Invalid password match. Please try again.");
+            }
+
+            return Ok(new
+            {
+                Id = tempUser.Id,
+                Name = tempUser.Name,
+                Role = tempUser.Role,
+                Email = tempUser.Email
+            });
         }
     }
 }

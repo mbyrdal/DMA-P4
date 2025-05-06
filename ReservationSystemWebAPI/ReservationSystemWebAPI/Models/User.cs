@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace ReservationSystemWebAPI.Models
 {
@@ -12,6 +13,10 @@ namespace ReservationSystemWebAPI.Models
         [Required]
         public string Role { get; set; } = "Bruger"; // Kan være "Bruger" eller "Admin"
 
-        public string? Email { get; set; } // valgfrit
+        [Required]
+        public string Email { get; set; } = "hej123@abc.dk"; // valgfrit
+
+        [Required]
+        public string Password { get; set; } = "123abc"; // Store hashed password
     }
 }
