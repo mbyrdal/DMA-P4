@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -19,6 +20,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // GET: api/User
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
         {
             return await _context.Users.ToListAsync();
@@ -26,6 +28,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // GET: api/User/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<User>> GetUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -35,6 +38,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // POST: api/User
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
             _context.Users.Add(user);
@@ -44,6 +48,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // PUT: api/User/5
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUser(int id, User updatedUser)
         {
             if (id != updatedUser.Id) return BadRequest();
@@ -64,6 +69,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // DELETE: api/User/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -77,6 +83,7 @@ namespace ReservationSystemWebAPI.Controllers
 
         // POST: api/User/login
         [HttpPost("login")]
+        [Authorize]
         public async Task<ActionResult<User>> Login([FromBody] User userDetails)
         {
             User tempUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == userDetails.Email);
