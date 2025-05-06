@@ -10,9 +10,9 @@ namespace ReservationSystemWebAPI.Models
         public int Id { get; set; }
         public string? UserName { get; set; } // valgfrit, kan bruges senere med login
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public bool IsConvertedToLoan { get; set; } = false;
-
         public List<ReservationItem> Items { get; set; } = new();
+        public bool IsCollected { get; set; }
+        public DateTime? CollectedAt { get; set; }
     }
 
     public class ReservationItem
@@ -20,7 +20,6 @@ namespace ReservationSystemWebAPI.Models
         public int Id { get; set; }
         public string EquipmentName { get; set; } = "";
         public int Quantity { get; set; }
-
         public int ReservationId { get; set; }
 
         [JsonIgnore] // Ignoreres ved serialization

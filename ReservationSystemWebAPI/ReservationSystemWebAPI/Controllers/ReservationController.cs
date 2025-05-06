@@ -34,7 +34,6 @@ namespace ReservationSystemWebAPI.Controllers
         public async Task<ActionResult<Reservation>> Create(Reservation reservation)
         {
             reservation.CreatedAt = DateTime.Now;
-            reservation.IsConvertedToLoan = false;
 
             foreach (var item in reservation.Items)
             {
@@ -59,7 +58,6 @@ namespace ReservationSystemWebAPI.Controllers
             var res = await _context.Reservations.FindAsync(id);
             if (res == null) return NotFound();
 
-            res.IsConvertedToLoan = true;
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -85,5 +83,20 @@ namespace ReservationSystemWebAPI.Controllers
 
             return NoContent();
         }
+
+        [HttpPatch("{id}/collect")]
+        public async Task<IActionResult> ConfirmCollection(int id)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null)
+                return NotFound();
+
+            reservation.IsCollected = true;
+            reservation.CollectedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
     }
 }
