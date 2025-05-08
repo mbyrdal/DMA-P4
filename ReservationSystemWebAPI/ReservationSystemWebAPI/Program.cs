@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Get Connection String from appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+/*
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
@@ -30,7 +31,7 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
-});
+});*/
 
 builder.Services.AddCors(options =>
 {
