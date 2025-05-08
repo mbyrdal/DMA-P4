@@ -34,17 +34,21 @@ namespace ReservationSystemWebAPI.Controllers
         public async Task<ActionResult<Reservation>> Create(Reservation reservation)
         {
             reservation.CreatedAt = DateTime.Now;
+            reservation.Status = "Inaktiv";
 
             foreach (var item in reservation.Items)
             {
-                var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.EquipmentName);
+                item.IsReturned = false; // Tilføj denne linje
+
+                var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing == null || existing.Antal < item.Quantity)
                 {
-                    return BadRequest($"Ikke nok af '{item.EquipmentName}' på lager.");
+                    return BadRequest($"Ikke nok af '{item.Equipment}' på lager.");
                 }
 
                 existing.Antal -= item.Quantity;
             }
+
 
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
@@ -53,14 +57,20 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
         [HttpPut("{id}/confirm")]
-        public async Task<IActionResult> ConfirmToLoan(int id)
+        public async Task<IActionResult> ConfirmReservation(int id)
         {
+
             var res = await _context.Reservations.FindAsync(id);
             if (res == null) return NotFound();
+            if (res.Status == "Aktiv")
+            {
+                return BadRequest("Fejl. Reservation er allerede aktiv.");
+            }
+            res.Status = "Aktiv";
 
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok("Success. Reservationen er nu Aktiv.");
         }
 
         [HttpDelete("{id}")]
@@ -71,7 +81,7 @@ namespace ReservationSystemWebAPI.Controllers
 
             foreach (var item in res.Items)
             {
-                var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.EquipmentName);
+                var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing != null)
                 {
                     existing.Antal += item.Quantity;
@@ -92,11 +102,39 @@ namespace ReservationSystemWebAPI.Controllers
                 return NotFound();
 
             reservation.IsCollected = true;
-            reservation.CollectedAt = DateTime.Now;
+            reservation.Status = "Aktiv";
 
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
+        
+        [HttpPatch("{reservationId}/return/{itemId}")]
+        public async Task<IActionResult> ReturnItem(int reservationId, int itemId)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == reservationId);
+
+            if (reservation == null)
+                return NotFound("Reservation not found.");
+
+            var item = reservation.Items.FirstOrDefault(i => i.Id == itemId);
+            if (item == null)
+                return NotFound("Item not found in reservation.");
+
+            item.IsReturned = true;
+
+            var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
+            if (equipment != null)
+            {
+                equipment.Antal += item.Quantity;
+            }
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+        
 
     }
 }

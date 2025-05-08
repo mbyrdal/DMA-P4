@@ -64,35 +64,35 @@ function EquipmentOverview() {
     });
 
     const selectedItem = equipmentList.find(item => item.id === id);
-    const existing = myReservation.find(item => item.equipmentName === selectedItem.navn);
+    const existing = myReservation.find(item => item.equipment === selectedItem.navn);
 
     const updatedReservation = existing
       ? myReservation.map(item =>
-          item.equipmentName === selectedItem.navn
+          item.equipment === selectedItem.navn
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
-      : [...myReservation, { equipmentName: selectedItem.navn, quantity: 1 }];
+      : [...myReservation, { equipment: selectedItem.navn, quantity: 1 }];
 
     setEquipmentList(updatedList);
     setMyReservation(updatedReservation);
     setIsModified(true);
   };
 
-  const handleRemoveItem = (equipmentName) => {
-    const itemToRemove = myReservation.find(item => item.equipmentName === equipmentName);
+  const handleRemoveItem = (equipment) => {
+    const itemToRemove = myReservation.find(item => item.equipment === equipment);
     if (!itemToRemove) return;
 
     const updatedReservation = itemToRemove.quantity > 1
       ? myReservation.map(item =>
-          item.equipmentName === equipmentName
+          item.equipment === equipment
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
-      : myReservation.filter(item => item.equipmentName !== equipmentName);
+      : myReservation.filter(item => item.equipment !== equipment);
 
     const updatedEquipment = equipmentList.map(item =>
-      item.navn === equipmentName ? { ...item, antal: item.antal + 1 } : item
+      item.navn === equipment ? { ...item, antal: item.antal + 1 } : item
     );
 
     setMyReservation(updatedReservation);
@@ -129,9 +129,16 @@ function EquipmentOverview() {
     }
   
     const reservationData = {
-      userName: "MidlertidigBruger",
-      items: myReservation
+      email: "tommy@wexo.dk", // Hardcoded testbruger – skal udskiftes med reel login senere
+      items: myReservation.map(item => ({
+        equipment: item.equipment,
+        quantity: item.quantity
+      })),
+      status: "Inaktiv",
     };
+    
+  
+    console.log("Payload til API:", JSON.stringify(reservationData, null, 2)); // Debug
   
     fetch("https://localhost:7092/api/reservation", {
       method: "POST",
@@ -148,7 +155,7 @@ function EquipmentOverview() {
         alert("Reservation oprettet!");
         setIsModified(false);
   
-        // Den nye reservation hentes for at opdatere visningen
+        // Hent nyeste reservation igen
         fetch("https://localhost:7092/api/reservation")
           .then(res => res.json())
           .then(data => {
@@ -165,6 +172,7 @@ function EquipmentOverview() {
         alert("Kunne ikke oprette reservation.");
       });
   };
+  
    
 
   const filteredItems = equipmentList.filter(item => {
@@ -263,7 +271,7 @@ function EquipmentOverview() {
           <ul style={{ listStyle: "none", paddingLeft: 0, marginTop: "1rem" }}>
             {myReservation.map(item => (
               <li
-                key={item.equipmentName}
+                key={item.equipment}
                 style={{
                   display: "flex",
                   justifyContent: "center",
@@ -272,11 +280,11 @@ function EquipmentOverview() {
                 }}
               >
                 <div style={{ width: "200px", textAlign: "right", paddingRight: "1rem" }}>
-                  <strong>{item.equipmentName}</strong> – {item.quantity} stk.
+                  <strong>{item.equipment}</strong> – {item.quantity} stk.
                 </div>
 
                 <button
-                  onClick={() => handleRemoveItem(item.equipmentName)}
+                  onClick={() => handleRemoveItem(item.equipment)}
                   style={{
                     padding: "0.3rem 0.8rem",
                     backgroundColor: "#D9534F",

@@ -14,7 +14,7 @@ namespace ReservationSystemWebAPI.DataAccess
         
         public DbSet<StorageItem> WEXO_DEPOT { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
-        public DbSet<ReservationItem> ReservationItems { get; set; }
+        public DbSet<ReservationItems> ReservationItems { get; set; }
         public DbSet<User> Users { get; set; }
 
 

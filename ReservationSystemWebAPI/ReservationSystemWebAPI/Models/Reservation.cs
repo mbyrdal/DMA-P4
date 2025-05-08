@@ -8,19 +8,21 @@ namespace ReservationSystemWebAPI.Models
     public class Reservation
     {
         public int Id { get; set; }
-        public string? UserName { get; set; } // valgfrit, kan bruges senere med login
+        public string? Email { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public List<ReservationItem> Items { get; set; } = new();
+        public List<ReservationItems> Items { get; set; } = new();
         public bool IsCollected { get; set; }
-        public DateTime? CollectedAt { get; set; }
+        public string Status { get; set; }
     }
 
-    public class ReservationItem
+    public class ReservationItems
     {
         public int Id { get; set; }
-        public string EquipmentName { get; set; } = "";
+        public string Equipment { get; set; } = "";
         public int Quantity { get; set; }
         public int ReservationId { get; set; }
+        public bool IsReturned { get; set; } = false;
+
 
         [JsonIgnore] // Ignoreres ved serialization
         [ForeignKey("ReservationId")]
