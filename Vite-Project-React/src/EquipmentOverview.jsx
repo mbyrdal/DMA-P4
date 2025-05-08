@@ -220,31 +220,35 @@ function EquipmentOverview() {
             <th style={thStyle}>ID</th>
             <th style={thStyle}>Navn</th>
             <th style={thStyle}>Antal</th>
-            <th style={thStyle}>Lokation</th>
+            <th style={thStyle}>Reol</th>
+            <th style={thStyle}>Hylde</th>
+            <th style={thStyle}>Kasse</th>
           </tr>
         </thead>
         <tbody>
           {filteredItems.map(item => (
-            <tr
-              key={item.id}
-              onClick={() => item.antal > 0 && handleReserve(item.id)}
-              style={{
-                cursor: item.antal > 0 ? "pointer" : "not-allowed",
-                backgroundColor: item.antal === 0 ? "#444" : "transparent",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => {
-                if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
-              }}
+          <tr
+            key={item.id}
+            onClick={() => item.antal > 0 && handleReserve(item.id)}
+            style={{
+              cursor: item.antal > 0 ? "pointer" : "not-allowed",
+              backgroundColor: item.antal === 0 ? "#444" : "transparent",
+              transition: "background-color 0.2s"
+            }}
+            onMouseEnter={(e) => {
+              if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
+            }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
-              }}
-            >
-              <td style={tdStyle}>{item.id}</td>
-              <td style={tdStyle}>{item.navn}</td>
-              <td style={tdStyle}>{item.antal}</td>
-              <td style={tdStyle}>{item.lokation}</td>
-            </tr>
+              e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
+            }}
+            > 
+            <td style={tdStyle}>{item.id}</td>
+            <td style={tdStyle}>{item.navn}</td>
+            <td style={tdStyle}>{item.antal}</td>
+            <td style={tdStyle}>{item.reol || "?"}</td>
+            <td style={tdStyle}>{item.hylde || "?"}</td>
+            <td style={tdStyle}>{item.kasse || "?"}</td>
+          </tr>
           ))}
         </tbody>
       </table>
