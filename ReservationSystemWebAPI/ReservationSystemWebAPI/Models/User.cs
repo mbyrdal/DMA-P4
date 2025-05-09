@@ -12,6 +12,9 @@ namespace ReservationSystemWebAPI.Models
         [Required]
         public string Role { get; set; } = "Bruger"; // Kan være "Bruger" eller "Admin"
 
-        public string? Email { get; set; } // valgfrit
+        public string Email { get; set; } = "";
+
+        public string Password { get; set; } = "";
+
     }
 }

@@ -2,24 +2,50 @@ import { Link } from "react-router-dom";
 import React, { useState } from "react";
 
 function AdminLogin({ onAdminLogin }) {
-  const [adminCode, setAdminCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-
-  // HARDCODED ADMIN KODE TIL LOGIN - SKAL FJERNES
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (adminCode === "admin1234") {
-      onAdminLogin();
+
+    try {
+      const response = await fetch("https://localhost:7092/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("Forkert e-mail eller adgangskode.");
+        } else {
+          setError("Noget gik galt under login.");
+        }
+        return;
+      }
+
+      const user = await response.json();
+
+      if (user.role !== "Admin") {
+        setError("Kun administratorer har adgang til dette område.");
+        return;
+      }
+
       localStorage.setItem("isAdminLoggedIn", "true");
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("userRole", user.role);
       setError("");
-    } else {
-      setError("Forkert admin-kode. Prøv igen.");
+      onAdminLogin();
+
+    } catch (err) {
+      console.error("Login-fejl:", err);
+      setError("Der opstod en fejl ved login.");
     }
   };
 
   return (
-    <div 
+    <div
       style={{
         fontFamily: "Arial",
         minHeight: "100vh",
@@ -28,15 +54,14 @@ function AdminLogin({ onAdminLogin }) {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: "#121212", // evt. samme baggrundsfarve som Main Login
+        backgroundColor: "#121212",
         color: "white",
       }}
     >
-      {/* Tilbage-knap oppe i højre hjørne */}
       <div style={{ position: "absolute", top: "20px", right: "20px" }}>
         <Link to="/login">
           <button
-            style={{    
+            style={{
               fontFamily: "Arial",
               backgroundColor: "#6c757d",
               color: "white",
@@ -55,10 +80,19 @@ function AdminLogin({ onAdminLogin }) {
         <h2>Admin Log ind</h2>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
           <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Indtast admin e-mail"
+            required
+            style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+          />
+          <input
             type="password"
-            value={adminCode}
-            onChange={(e) => setAdminCode(e.target.value)}
-            placeholder="Indtast admin-kode"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Indtast adgangskode"
+            required
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
           />
           <br />

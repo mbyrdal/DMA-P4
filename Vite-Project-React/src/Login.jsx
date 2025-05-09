@@ -3,17 +3,38 @@ import React, { useState } from "react";
 
 function Login({ onLogin }) {
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // HARDCODED KODE TIL LOGIN - SKAL FJERNES
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (code === "1234") {
-      onLogin();
+
+    try {
+      const response = await fetch("https://localhost:7092/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("Forkert e-mail eller adgangskode.");
+        } else {
+          setError("Noget gik galt under login.");
+        }
+        return;
+      }
+
+      const user = await response.json();
       localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("userRole", user.role);
+      onLogin();
       setError("");
-    } else {
-      setError("Forkert kode. Prøv igen.");
+    } catch (err) {
+      console.error("Login-fejl:", err);
+      setError("Der opstod en fejl ved login.");
     }
   };
 
@@ -27,11 +48,10 @@ function Login({ onLogin }) {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: "#121212", // mørk baggrund
+        backgroundColor: "#121212",
         color: "white",
       }}
     >
-      {/* Admin Login knap oppe i højre hjørne */}
       <div style={{ position: "absolute", top: "20px", right: "20px" }}>
         <Link to="/admin-login">
           <button
@@ -54,11 +74,20 @@ function Login({ onLogin }) {
         <h2>Log ind</h2>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
           <input
-            type="password"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Indtast kode"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Indtast e-mail"
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+            required
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Indtast adgangskode"
+            style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+            required
           />
           <br />
           <button
