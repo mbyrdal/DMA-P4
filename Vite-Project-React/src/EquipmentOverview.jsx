@@ -101,24 +101,45 @@ function EquipmentOverview() {
   };
 
   const handleClearReservation = () => {
-    fetch("https://localhost:7092/api/reservation")
-      .then(res => res.json())
-      .then(data => {
-        if (data.length === 0) return;
-        const latest = data[data.length - 1];
-  
-        return fetch(`https://localhost:7092/api/reservation/${latest.id}`, {
-          method: "DELETE"
-        });
+    if (myReservation.length === 0) {
+      alert("Der er ingen varer at rydde.");
+      return;
+    }
+
+    const clearPayload = {
+      email: "tommy@wexo.dk",
+      items: myReservation,
+      timestamp: new Date().toISOString(),
+    };
+
+    fetch("https://localhost:7092/api/reservation/clear", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(clearPayload)
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Rydning mislykkedes.");
+        return res.json();
       })
       .then(() => {
         setMyReservation([]);
         setIsModified(false);
-        alert("Reservation slettet.");
+        alert("Reservation ryddet og historik opdateret.");
+
+        return fetch("https://localhost:7092/api/backend");
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Kunne ikke hente opdateret lager.");
+        return res.json();
+      })
+      .then(updatedEquipment => {
+        setEquipmentList(updatedEquipment);
       })
       .catch(err => {
-        console.error("Fejl ved sletning af reservation:", err);
-        alert("Kunne ikke slette reservation.");
+        console.error("Fejl ved rydning:", err);
+        alert("Kunne ikke rydde reservation.");
       });
   };
 
@@ -127,19 +148,16 @@ function EquipmentOverview() {
       alert("Du har ikke reserveret noget.");
       return;
     }
-  
+
     const reservationData = {
-      email: "tommy@wexo.dk", // Hardcoded testbruger – skal udskiftes med reel login senere
+      email: "tommy@wexo.dk",
       items: myReservation.map(item => ({
         equipment: item.equipment,
         quantity: item.quantity
       })),
       status: "Inaktiv",
     };
-    
-  
-    console.log("Payload til API:", JSON.stringify(reservationData, null, 2)); // Debug
-  
+
     fetch("https://localhost:7092/api/reservation", {
       method: "POST",
       headers: {
@@ -154,8 +172,6 @@ function EquipmentOverview() {
       .then(() => {
         alert("Reservation oprettet!");
         setIsModified(false);
-  
-        // Hent nyeste reservation igen
         fetch("https://localhost:7092/api/reservation")
           .then(res => res.json())
           .then(data => {
@@ -172,8 +188,6 @@ function EquipmentOverview() {
         alert("Kunne ikke oprette reservation.");
       });
   };
-  
-   
 
   const filteredItems = equipmentList.filter(item => {
     const matchesSearch =
@@ -235,28 +249,28 @@ function EquipmentOverview() {
         </thead>
         <tbody>
           {filteredItems.map(item => (
-          <tr
-            key={item.id}
-            onClick={() => item.antal > 0 && handleReserve(item.id)}
-            style={{
-              cursor: item.antal > 0 ? "pointer" : "not-allowed",
-              backgroundColor: item.antal === 0 ? "#444" : "transparent",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => {
-              if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
-            }}
+            <tr
+              key={item.id}
+              onClick={() => item.antal > 0 && handleReserve(item.id)}
+              style={{
+                cursor: item.antal > 0 ? "pointer" : "not-allowed",
+                backgroundColor: item.antal === 0 ? "#444" : "transparent",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                if (item.antal > 0) e.currentTarget.style.backgroundColor = "#333";
+              }}
               onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
-            }}
-            > 
-            <td style={tdStyle}>{item.id}</td>
-            <td style={tdStyle}>{item.navn}</td>
-            <td style={tdStyle}>{item.antal}</td>
-            <td style={tdStyle}>{item.reol || "?"}</td>
-            <td style={tdStyle}>{item.hylde || "?"}</td>
-            <td style={tdStyle}>{item.kasse || "?"}</td>
-          </tr>
+                e.currentTarget.style.backgroundColor = item.antal === 0 ? "#444" : "transparent";
+              }}
+            >
+              <td style={tdStyle}>{item.id}</td>
+              <td style={tdStyle}>{item.navn}</td>
+              <td style={tdStyle}>{item.antal}</td>
+              <td style={tdStyle}>{item.reol || "?"}</td>
+              <td style={tdStyle}>{item.hylde || "?"}</td>
+              <td style={tdStyle}>{item.kasse || "?"}</td>
+            </tr>
           ))}
         </tbody>
       </table>

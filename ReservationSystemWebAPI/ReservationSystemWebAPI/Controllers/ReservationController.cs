@@ -134,7 +134,27 @@ namespace ReservationSystemWebAPI.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-        
 
+        [HttpPost("createHistory/{reservationId}")]
+        public async Task<IActionResult> CreateHistory(int reservationId)
+        {
+            var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == reservationId);
+            if (reservation == null)
+                return NotFound("Reservation not found.");
+
+            var history = new ReservationHistory
+            {
+                ReservationId = reservation.Id,
+                Email = reservation.Email,
+                CreatedAt = DateTime.Now,
+                IsCollected = reservation.IsCollected
+            };
+
+            // Gem historikken
+            _context.ReservationHistory.Add(history);
+            await _context.SaveChangesAsync();
+
+            return Ok("Reservation history created.");
+        }
     }
 }
