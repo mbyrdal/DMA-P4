@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useUser } from "./UserContext";
 
 function EquipmentOverview() {
+  const { user } = useUser(); // Brugeroplysninger fra konteksten
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("alle");
   const [equipmentList, setEquipmentList] = useState([]);
@@ -23,25 +25,21 @@ function EquipmentOverview() {
   };
 
   useEffect(() => {
-    fetch("https://localhost:7092/api/reservation")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Kunne ikke hente reservation");
+  if (!user?.email) return;
+
+  fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.length > 0) {
+        const latest = data[data.length - 1];
+        if (latest?.items && Array.isArray(latest.items)) {
+          setMyReservation(latest.items);
         }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.length > 0) {
-          const latest = data[data.length - 1];
-          if (latest && latest.items && Array.isArray(latest.items)) {
-            setMyReservation(latest.items);
-          }
-        }
-      })
-      .catch((error) => {
-        console.error("Fejl ved hentning af reservation:", error);
-      });
-  }, []);
+      }
+    })
+    .catch(err => console.error("Fejl ved hentning af brugerens reservation:", err));
+  }, [user]);
+
 
   useEffect(() => {
     fetch("https://localhost:7092/api/backend")
@@ -101,16 +99,17 @@ function EquipmentOverview() {
   };
 
   const handleClearReservation = () => {
-    if (myReservation.length === 0) {
-      alert("Der er ingen varer at rydde.");
-      return;
+    if (!user?.email) {
+    alert("Bruger ikke logget ind – reservation kan ikke ryddes.");
+    return;
     }
 
     const clearPayload = {
-      email: "tommy@wexo.dk",
+      email: user.email,
       items: myReservation,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
+
 
     fetch("https://localhost:7092/api/reservation/clear", {
       method: "POST",
@@ -144,19 +143,20 @@ function EquipmentOverview() {
   };
 
   const handleConfirm = () => {
-    if (myReservation.length === 0) {
-      alert("Du har ikke reserveret noget.");
-      return;
+    if (!user?.email) {
+    alert("Bruger ikke logget ind – reservation kan ikke oprettes.");
+    return;
     }
 
     const reservationData = {
-      email: "tommy@wexo.dk",
+      email: user.email,
       items: myReservation.map(item => ({
-        equipment: item.equipment,
-        quantity: item.quantity
+      equipment: item.equipment,
+      quantity: item.quantity
       })),
-      status: "Inaktiv",
+      status: "Inaktiv"
     };
+
 
     fetch("https://localhost:7092/api/reservation", {
       method: "POST",

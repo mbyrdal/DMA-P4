@@ -1,7 +1,11 @@
-import { Link } from "react-router-dom";
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useUser } from "./UserContext"; // Sørg for korrekt sti
 
-function AdminLogin({ onAdminLogin }) {
+function AdminLogin() {
+  const { login } = useUser();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,27 +21,22 @@ function AdminLogin({ onAdminLogin }) {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          setError("Forkert e-mail eller adgangskode.");
-        } else {
-          setError("Noget gik galt under login.");
-        }
+        setError("Forkert e-mail eller adgangskode.");
         return;
       }
 
       const user = await response.json();
+        user.role = user.role.toLowerCase(); // sikrer case-matching
 
-      if (user.role !== "Admin") {
-        setError("Kun administratorer har adgang til dette område.");
-        return;
-      }
+        if (user.role !== "admin") {
+          setError("Kun administratorer har adgang til dette område.");
+          return;
+        }
 
-      localStorage.setItem("isAdminLoggedIn", "true");
-      localStorage.setItem("userEmail", user.email);
-      localStorage.setItem("userRole", user.role);
-      setError("");
-      onAdminLogin();
 
+
+      login(user); // Gem bruger i context
+      navigate("/admin-dashboard");
     } catch (err) {
       console.error("Login-fejl:", err);
       setError("Der opstod en fejl ved login.");
@@ -53,7 +52,6 @@ function AdminLogin({ onAdminLogin }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        position: "relative",
         backgroundColor: "#121212",
         color: "white",
       }}
@@ -71,29 +69,29 @@ function AdminLogin({ onAdminLogin }) {
               cursor: "pointer",
             }}
           >
-            Tilbage
+            Bruger Login
           </button>
         </Link>
       </div>
 
       <div style={{ backgroundColor: "#1e1e1e", padding: "2rem", borderRadius: "10px" }}>
-        <h2>Admin Log ind</h2>
+        <h2>Admin Login</h2>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem" }}>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Indtast admin e-mail"
-            required
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+            required
           />
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Indtast adgangskode"
-            required
             style={{ padding: "0.5rem", marginBottom: "1rem", width: "100%" }}
+            required
           />
           <br />
           <button
@@ -109,7 +107,7 @@ function AdminLogin({ onAdminLogin }) {
               width: "100%",
             }}
           >
-            Log ind
+            Log ind som admin
           </button>
         </form>
         {error && <p style={{ color: "red", marginTop: "1rem" }}>{error}</p>}

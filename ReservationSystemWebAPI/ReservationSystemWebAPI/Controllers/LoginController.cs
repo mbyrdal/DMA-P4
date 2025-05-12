@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
+using ReservationSystemWebAPI.DTOs;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -17,7 +18,7 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -38,11 +39,4 @@ namespace ReservationSystemWebAPI.Controllers
         }
     }
 
-    public class LoginRequest
-    {
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-
-
-    }
 }

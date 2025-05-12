@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
+import { useUser } from "./UserContext"; // sørg for korrekt sti
 
-function Login({ onLogin }) {
-  const [code, setCode] = useState("");
+function Login() {
+  const { login } = useUser(); // fra context
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,12 +29,11 @@ function Login({ onLogin }) {
         return;
       }
 
-      const user = await response.json();
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", user.email);
-      localStorage.setItem("userRole", user.role);
-      onLogin();
+      const user = await response.json(); // { email, role }
+
+      login(user);              // gem bruger i context
       setError("");
+      navigate("/");            // redirect til overview
     } catch (err) {
       console.error("Login-fejl:", err);
       setError("Der opstod en fejl ved login.");

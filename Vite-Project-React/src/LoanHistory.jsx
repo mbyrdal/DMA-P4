@@ -93,11 +93,14 @@ function LoanHistory() {
         <h3>Aktiv reservation</h3>
         {reservation && reservation.items?.length > 0 ? (
           <>
-            <ul>
-              {reservation.items.map((item, idx) => (
-                <li key={idx}>{item.equipmentName} – {item.quantity} stk.</li>
-              ))}
-            </ul>
+          <div style={{ marginTop: "1rem" }}>
+            {reservation.items.map((item, idx) => (
+            <div key={idx} style={{ marginBottom: "0.3rem" }}>
+              <strong>{item.equipment}</strong> – {item.quantity} stk.
+            </div>
+            ))}
+          </div>
+
             <p style={{ marginTop: "0.5rem" }}>Udløber om: {timeLeft}</p>
             <button
               onClick={handleDeleteReservation}

@@ -11,26 +11,31 @@ export default function AdminDashboard() {
   const [selectedTab, setSelectedTab] = useState("overview");
 
   useEffect(() => {
+    // Hent alle reservationer
     fetch("https://localhost:7092/api/reservation")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Fejl ved hentning af reservationer");
+        return res.json();
+      })
       .then(data => {
-        const active = data.filter(res => !res.isConvertedToLoan).length;
-        setActiveReservations(active);
-      });
+        const inaktive = data.filter(res => res.status === "Inaktiv").length;
+        const aktive = data.filter(res => res.status === "Aktiv").length;
+        setActiveReservations(inaktive);
+        setActiveLoans(aktive);
+      })
+      .catch(err => console.error("Fejl i reservation-fetch:", err));
 
-    fetch("https://localhost:7092/api/loan")
-      .then(res => res.json())
-      .then(data => {
-        const active = data.filter(loan => !loan.returned).length;
-        setActiveLoans(active);
-      });
-
+    // Hent udstyr og find lav beholdning
     fetch("https://localhost:7092/api/backend")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Fejl ved hentning af udstyr");
+        return res.json();
+      })
       .then(data => {
         const lowStock = data.filter(item => item.antal < 6);
         setLowStockItems(lowStock);
-      });
+      })
+      .catch(err => console.error("Fejl i udstyrs-fetch:", err));
   }, []);
 
   const buttonClass = (tab) => ({
@@ -55,11 +60,10 @@ export default function AdminDashboard() {
         <button style={buttonClass("history")} onClick={() => setSelectedTab("history")}>Historik</button>
       </div>
 
-      {/* Fanernes indhold */}
       {selectedTab === "overview" && (
-        <AdminOverviewTab 
-          activeReservations={activeReservations} 
-          activeLoans={activeLoans} 
+        <AdminOverviewTab
+          activeReservations={activeReservations}
+          activeLoans={activeLoans}
           lowStockItems={lowStockItems}
         />
       )}

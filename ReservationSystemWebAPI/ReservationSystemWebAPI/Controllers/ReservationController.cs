@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
+using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
+using ReservationSystemWebAPI.DTOs;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -30,16 +32,34 @@ namespace ReservationSystemWebAPI.Controllers
             return res;
         }
 
-        [HttpPost]
-        public async Task<ActionResult<Reservation>> Create(Reservation reservation)
+        [HttpGet("user/{email}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetByUser(string email)
         {
-            reservation.CreatedAt = DateTime.Now;
-            reservation.Status = "Inaktiv";
+            return await _context.Reservations
+                .Where(r => r.Email == email)
+                .Include(r => r.Items)
+                .ToListAsync();
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult<Reservation>> Create(ReservationDto dto)
+        {
+            var reservation = new Reservation
+            {
+                Email = dto.Email,
+                Status = dto.Status,
+                CreatedAt = DateTime.Now,
+                Items = dto.Items.Select(i => new ReservationItems
+                {
+                    Equipment = i.Equipment,
+                    Quantity = i.Quantity,
+                    IsReturned = false
+                }).ToList()
+            };
 
             foreach (var item in reservation.Items)
             {
-                item.IsReturned = false; // Tilføj denne linje
-
                 var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing == null || existing.Antal < item.Quantity)
                 {
@@ -48,7 +68,6 @@ namespace ReservationSystemWebAPI.Controllers
 
                 existing.Antal -= item.Quantity;
             }
-
 
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
