@@ -7,6 +7,7 @@ import AdminLogin from './AdminLogin'; // Tilføjet AdminLogin
 import AdminDashboard from './AdminDashboard'; // Tilføjet AdminDashboard
 import LogoutButton from './LogoutButton';
 
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false); // Ny admin login state
