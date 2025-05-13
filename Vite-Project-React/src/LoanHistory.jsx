@@ -1,74 +1,84 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useUser } from './UserContext';
 
 function LoanHistory() {
-  const [reservation, setReservation] = useState(null);
-  const [timeLeft, setTimeLeft] = useState("");
+  const { user } = useUser();
+  const [reservations, setReservations] = useState([]);
+  const [timeLeft, setTimeLeft] = useState({});
   const [loans, setLoans] = useState([]);
 
-  // Hent seneste reservation fra API (kun nyeste)
+  const activeReservations = reservations.filter(r => r.status === "Inaktiv");
+  const previousReservations = reservations.filter(r => r.status !== "Inaktiv");
+
+  // Hent kun reservationer for den aktuelle bruger
   useEffect(() => {
-    fetch("https://localhost:7092/api/reservation")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.length > 0) {
-          const latest = data[data.length - 1];
-          setReservation(latest);
+    if (!user?.email) return;
+
+    fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
+      .then(res => res.json())
+      .then(data => {
+        const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setReservations(sorted);
+      })
+      .catch(err => console.error("Fejl ved hentning af reservationer:", err));
+  }, [user?.email]);
+
+  // Countdown for aktiv reservation
+  useEffect(() => {
+    if (activeReservations.length === 0) return;
+
+    const intervals = activeReservations.map((reservation, index) => {
+      return setInterval(() => {
+        const expiration = new Date(reservation.createdAt);
+        expiration.setHours(expiration.getHours() + 24);
+        const now = new Date();
+        const diff = expiration - now;
+
+        if (diff <= 0) {
+          setTimeLeft(prev => ({
+            ...prev,
+            [reservation.id]: "Reservation er udløbet"
+          }));
+          clearInterval(intervals[index]);
+          return;
         }
-      })
-      .catch((err) => console.error("Fejl ved hentning af reservation:", err));
-  }, []);
 
-  // Countdown til reservation udløber
-  useEffect(() => {
-    if (!reservation?.createdAt) return;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-    const interval = setInterval(() => {
-      const expiration = new Date(reservation.createdAt);
-      expiration.setHours(expiration.getHours() + 24);
-      const now = new Date();
-      const diff = expiration - now;
+        setTimeLeft(prev => ({
+          ...prev,
+          [reservation.id]: `${hours}t ${minutes}m ${seconds}s`
+        }));
+      }, 1000);
+    });
 
-      if (diff <= 0) {
-        setTimeLeft("Reservation er udløbet");
-        clearInterval(interval);
-        return;
-      }
+    return () => intervals.forEach(clearInterval);
+  }, [activeReservations]);
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      setTimeLeft(`${hours}t ${minutes}m ${seconds}s`);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [reservation]);
-
-  // Her skal aktive og afsluttede lån hentes fra backend senere
-  // Denne logik skal opdateres når brugere implementeres ✅
-  useEffect(() => {
-    // Midlertidig tomt array – fjernet dummy data
-    setLoans([]);
-  }, []);
-
-  const handleDeleteReservation = () => {
-    if (!reservation) return;
-
-    fetch(`https://localhost:7092/api/reservation/${reservation.id}`, {
-      method: "DELETE"
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Kunne ikke slette reservation");
-        setReservation(null);
-        setTimeLeft("");
-        alert("Reservation slettet.");
-      })
-      .catch((err) => {
-        console.error("Fejl ved sletning:", err);
-        alert("Kunne ikke slette reservation.");
+  const handleDeleteReservation = (reservationId) => {
+  fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
+    method: "DELETE"
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Kunne ikke slette reservation");
+      setReservations(prev => prev.filter(r => r.id !== reservationId));
+      setTimeLeft(prev => {
+        const copy = { ...prev };
+        delete copy[reservationId];
+        return copy;
       });
-  };
+      alert("Reservation slettet.");
+    })
+    .catch((err) => {
+      console.error("Fejl ved sletning:", err);
+      alert("Kunne ikke slette reservation.");
+    });
+};
+
 
   return (
     <div style={{ padding: "2rem", fontFamily: "Arial", color: "white" }}>
@@ -89,58 +99,48 @@ function LoanHistory() {
 
       <h2>Lånehistorik</h2>
 
+      {/* AKTIV RESERVATION */}
       <section style={{ marginTop: "2rem" }}>
-        <h3>Aktiv reservation</h3>
-        {reservation && reservation.items?.length > 0 ? (
-          <>
-          <div style={{ marginTop: "1rem" }}>
-            {reservation.items.map((item, idx) => (
-            <div key={idx} style={{ marginBottom: "0.3rem" }}>
-              <strong>{item.equipment}</strong> – {item.quantity} stk.
-            </div>
-            ))}
+        <h3>Aktive reservationer</h3>
+          {activeReservations.length > 0 ? (
+            activeReservations.map((reservation) => (
+              <div key={reservation.id} style={{ marginBottom: "1rem", borderBottom: "1px solid #444", paddingBottom: "1rem" }}>
+              <p><strong>Oprettet:</strong> {new Date(reservation.createdAt).toLocaleString()}</p>
+              {reservation.items.map((item, idx) => (
+          <div key={idx}>
+            <strong>{item.equipment}</strong> – {item.quantity} stk.
           </div>
+        ))}
+        <p style={{ marginTop: "0.5rem" }}>
+          Udløber om: {timeLeft[reservation.id] || "Beregner..."}
+        </p>
+        <button
+          onClick={() => handleDeleteReservation(reservation.id)}
+          style={{
+            marginTop: "0.5rem",
+            padding: "0.5rem 1rem",
+            backgroundColor: "#D9534F",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer"
+          }}
+        >
+          Ryd denne reservation
+        </button>
+      </div>
+    ))
+  ) : (
+    <p>Ingen aktive reservationer.</p>
+  )}
+</section>
 
-            <p style={{ marginTop: "0.5rem" }}>Udløber om: {timeLeft}</p>
-            <button
-              onClick={handleDeleteReservation}
-              style={{
-                marginTop: "1rem",
-                padding: "0.5rem 1rem",
-                backgroundColor: "#D9534F",
-                color: "white",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer"
-              }}
-            >
-              Ryd reservation
-            </button>
-          </>
-        ) : (
-          <p>Ingen aktiv reservation.</p>
-        )}
-      </section>
 
       <hr style={{ margin: "2rem 0" }} />
 
-      <section>
-        <h3>Aktive lån</h3>
-        {loans.filter(l => !l.returnedAt).length > 0 ? (
-          <ul>
-            {loans.filter(l => !l.returnedAt).map(loan => (
-              <li key={loan.id}>
-                {loan.name} – Lånt den {new Date(loan.borrowedAt).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Ingen aktive lån.</p>
-        )}
-      </section>
-
+      {/* RETURNEREDE LÅN */}
       <section style={{ marginTop: "2rem" }}>
-        <h3>Afsluttede lån</h3>
+        <h3>Afsluttede reservationer</h3>
         {loans.filter(l => l.returnedAt).length > 0 ? (
           <ul>
             {loans.filter(l => l.returnedAt).map(loan => (
@@ -150,7 +150,7 @@ function LoanHistory() {
             ))}
           </ul>
         ) : (
-          <p>Ingen afsluttede lån endnu.</p>
+          <p>Ingen afsluttede reservationer endnu.</p>
         )}
       </section>
     </div>
