@@ -18,10 +18,10 @@ export default function AdminDashboard() {
         return res.json();
       })
       .then(data => {
-        const inaktive = data.filter(res => res.status === "Inaktiv").length;
         const aktive = data.filter(res => res.status === "Aktiv").length;
-        setActiveReservations(inaktive);
-        setActiveLoans(aktive);
+        const inaktive = data.filter(res => res.status === "Inaktiv").length;
+        setActiveReservations(aktive);
+        setActiveLoans(inaktive);
       })
       .catch(err => console.error("Fejl i reservation-fetch:", err));
 

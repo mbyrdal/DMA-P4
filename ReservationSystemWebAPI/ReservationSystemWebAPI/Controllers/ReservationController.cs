@@ -176,5 +176,18 @@ namespace ReservationSystemWebAPI.Controllers
 
             return Ok("Reservation history created.");
         }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] Reservation update)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null)
+                return NotFound();
+
+            reservation.Status = update.Status;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
     }
 }
