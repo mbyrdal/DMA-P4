@@ -114,7 +114,7 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
 
-        [HttpPatch("{id}/collect")]
+        [HttpPatch("markcollected/{id}")]
         public async Task<IActionResult> ConfirmCollection(int id)
         {
             var reservation = await _context.Reservations.FindAsync(id);

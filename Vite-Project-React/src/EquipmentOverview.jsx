@@ -130,7 +130,7 @@ function EquipmentOverview() {
       equipment: item.equipment,
       quantity: item.quantity
     })),
-    status: "Inaktiv"
+    status: "Aktiv"
     };
 
     fetch("https://localhost:7092/api/reservation", {
