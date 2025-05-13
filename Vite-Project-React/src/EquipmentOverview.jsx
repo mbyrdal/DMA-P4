@@ -177,7 +177,7 @@ function EquipmentOverview() {
             borderRadius: "5px",
             cursor: "pointer"
           }}>
-            Se lånehistorik
+            Reservationer
           </button>
         </Link>
       </div>

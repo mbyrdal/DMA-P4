@@ -6,7 +6,7 @@ function LoanHistory() {
   const { user } = useUser();
   const [reservations, setReservations] = useState([]);
   const [timeLeft, setTimeLeft] = useState({});
-  const [loans, setLoans] = useState([]);
+
 
   const activeReservations = reservations.filter(r => r.status === "Aktiv");
   const previousReservations = reservations.filter(r => r.status !== "Aktiv");
@@ -181,19 +181,32 @@ function LoanHistory() {
       <hr style={{ margin: "2rem 0" }} />
 
       <section style={{ marginTop: "2rem" }}>
-        <h3>Afsluttede reservationer</h3>
-        {loans.filter(l => l.returnedAt).length > 0 ? (
-          <ul>
-            {loans.filter(l => l.returnedAt).map(loan => (
-              <li key={loan.id}>
-                Afleverede {loan.name} den {new Date(loan.returnedAt).toLocaleString()}
-              </li>
+      <h3>Afsluttede reservationer</h3>
+      {previousReservations.length > 0 ? (
+        previousReservations.map((res) => (
+          <div key={res.id} style={{
+            backgroundColor: "#1e1e1e",
+            padding: "1rem",
+            marginBottom: "1rem",
+            borderRadius: "8px",
+            boxShadow: "0 0 5px rgba(255, 255, 255, 0.05)"
+          }}>
+            <p><strong>Oprettet:</strong> {new Date(res.createdAt).toLocaleString()}</p>
+            {res.items.map((item, idx) => (
+              <div key={idx}>
+                <strong>{item.equipment}</strong> – {item.quantity} stk.
+              </div>
             ))}
-          </ul>
-        ) : (
-          <p>Ingen afsluttede reservationer endnu.</p>
-        )}
-      </section>
+            <p style={{ marginTop: "0.5rem", color: "#ccc" }}>
+              Status: <span style={{ fontWeight: "bold", color: "#aaa" }}>{res.status}</span>
+            </p>
+          </div>
+        ))
+      ) : (
+        <p>Ingen afsluttede reservationer endnu.</p>
+      )}
+    </section>
+
     </div>
   );
 }
