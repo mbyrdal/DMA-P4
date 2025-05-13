@@ -113,6 +113,7 @@ namespace ReservationSystemWebAPI.Controllers
             return NoContent();
         }
 
+
         [HttpPatch("{id}/collect")]
         public async Task<IActionResult> ConfirmCollection(int id)
         {

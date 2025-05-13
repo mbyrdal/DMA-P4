@@ -25,21 +25,20 @@ function EquipmentOverview() {
   };
 
   useEffect(() => {
-  if (!user?.email) return;
+    if (!user?.email) return;
 
-  fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.length > 0) {
-        const latest = data[data.length - 1];
-        if (latest?.items && Array.isArray(latest.items)) {
-          setMyReservation(latest.items);
+    fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.length > 0) {
+          const latest = data[data.length - 1];
+          if (latest?.items && Array.isArray(latest.items)) {
+            setMyReservation(latest.items);
+          }
         }
-      }
-    })
-    .catch(err => console.error("Fejl ved hentning af brugerens reservation:", err));
+      })
+      .catch(err => console.error("Fejl ved hentning af brugerens reservation:", err));
   }, [user]);
-
 
   useEffect(() => {
     fetch("https://localhost:7092/api/backend")
@@ -54,6 +53,19 @@ function EquipmentOverview() {
   }, []);
 
   const handleReserve = (id) => {
+    const selectedItem = equipmentList.find(item => item.id === id);
+
+    // Check for existing confirmed reservation
+    const existingConfirmedReservation = myReservation.some(
+      (item) => item.equipment === selectedItem.navn && item.status === "Inaktiv"
+    );
+
+    if (existingConfirmedReservation) {
+      alert("Denne reservation kan ikke ændres.");
+      return;
+    }
+
+    // Opdater udstyrsliste
     const updatedList = equipmentList.map(item => {
       if (item.id === id && item.antal > 0) {
         return { ...item, antal: item.antal - 1 };
@@ -61,7 +73,7 @@ function EquipmentOverview() {
       return item;
     });
 
-    const selectedItem = equipmentList.find(item => item.id === id);
+    // Opdater reservation
     const existing = myReservation.find(item => item.equipment === selectedItem.navn);
 
     const updatedReservation = existing
@@ -99,64 +111,65 @@ function EquipmentOverview() {
   };
 
   const handleClearReservation = () => {
-    if (!user?.email) {
+  if (!user?.email) {
     alert("Bruger ikke logget ind – reservation kan ikke ryddes.");
     return;
-    }
+  }
 
-    const clearPayload = {
-      email: user.email,
-      items: myReservation,
-      timestamp: new Date().toISOString()
-    };
+  // Hent brugerens seneste reservation
+  fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.length === 0) {
+        alert("Ingen tidligere reservationer fundet.");
+        return;
+      }
 
+      const latest = data[data.length - 1];
+      const reservationId = latest.id;
 
-    fetch("https://localhost:7092/api/reservation/clear", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(clearPayload)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Rydning mislykkedes.");
-        return res.json();
-      })
-      .then(() => {
-        setMyReservation([]);
-        setIsModified(false);
-        alert("Reservation ryddet og historik opdateret.");
-
-        return fetch("https://localhost:7092/api/backend");
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Kunne ikke hente opdateret lager.");
-        return res.json();
-      })
-      .then(updatedEquipment => {
-        setEquipmentList(updatedEquipment);
-      })
-      .catch(err => {
-        console.error("Fejl ved rydning:", err);
-        alert("Kunne ikke rydde reservation.");
+      // Slet den seneste reservation
+      return fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
+        method: "DELETE",
       });
-  };
+    })
+    .then((res) => {
+      if (!res || !res.ok) throw new Error("Sletning mislykkedes.");
+      alert("Reservation ryddet.");
+
+      // Ryd state og hent opdateret lager
+      setMyReservation([]);
+      setIsModified(false);
+
+      return fetch("https://localhost:7092/api/backend");
+    })
+    .then((res) => {
+      if (!res.ok) throw new Error("Kunne ikke hente opdateret lager.");
+      return res.json();
+    })
+    .then((updatedEquipment) => {
+      setEquipmentList(updatedEquipment);
+    })
+    .catch((err) => {
+      console.error("Fejl ved rydning:", err);
+      alert("Kunne ikke rydde reservation.");
+    });
+};
 
   const handleConfirm = () => {
     if (!user?.email) {
-    alert("Bruger ikke logget ind – reservation kan ikke oprettes.");
-    return;
+      alert("Bruger ikke logget ind – reservation kan ikke oprettes.");
+      return;
     }
 
     const reservationData = {
       email: user.email,
       items: myReservation.map(item => ({
-      equipment: item.equipment,
-      quantity: item.quantity
+        equipment: item.equipment,
+        quantity: item.quantity
       })),
       status: "Inaktiv"
     };
-
 
     fetch("https://localhost:7092/api/reservation", {
       method: "POST",
