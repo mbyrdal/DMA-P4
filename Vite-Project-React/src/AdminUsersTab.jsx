@@ -40,16 +40,20 @@ export default function AdminUsersTab() {
       });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id, role) => {
+    if (role === "Admin") return; // Forhindrer sletning af admin
     if (!window.confirm("Er du sikker på at du vil slette brugeren?")) return;
     fetch(`https://localhost:7092/api/user/${id}`, { method: "DELETE" })
       .then(() => setUsers(prev => prev.filter(u => u.id !== id)));
   };
 
+
   const handleEditClick = (user) => {
+    if (user.role === "Admin") return; // Forhindrer redigering af admin
     setEditUser({ ...user });
     setEditMode(true);
   };
+
 
   const handleSaveEdit = () => {
     fetch(`https://localhost:7092/api/user/${editUser.id}`, {
@@ -140,17 +144,29 @@ export default function AdminUsersTab() {
               )}
             </div>
             <div>
-              {editMode && editUser?.id === user.id ? (
-                <button onClick={handleSaveEdit} style={{ marginRight: "0.5rem" }}>Gem</button>
-              ) : (
-                <button onClick={() => handleEditClick(user)} style={{ marginRight: "0.5rem" }}>Rediger</button>
+              {user.role !== "Admin" && (
+                editMode && editUser?.id === user.id ? (
+                  <button onClick={handleSaveEdit} style={{ marginRight: "0.5rem" }}>Gem</button>
+                ) : (
+                  <button onClick={() => handleEditClick(user)} style={{ marginRight: "0.5rem" }}>Rediger</button>
+                )
               )}
               <button
-                onClick={() => handleDelete(user.id)}
-                style={{ backgroundColor: "#D9534F", color: "white", border: "none", padding: "0.3rem 0.6rem", borderRadius: "4px" }}
+                onClick={() => handleDelete(user.id, user.role)}
+                disabled={user.role === "Admin"}
+                style={{
+                  backgroundColor: "#D9534F",
+                  color: "white",
+                  border: "none",
+                  padding: "0.3rem 0.6rem",
+                  borderRadius: "4px",
+                  opacity: user.role === "Admin" ? 0.5 : 1,
+                  cursor: user.role === "Admin" ? "not-allowed" : "pointer"
+                }}
               >
                 Slet
               </button>
+
             </div>
           </li>
         ))}
