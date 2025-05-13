@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './Tab.css';
 
 export default function AdminHistoryTab() {
   const [reservations, setReservations] = useState([]);
@@ -22,9 +23,9 @@ export default function AdminHistoryTab() {
   const completedLoans = loans.filter(l => l.returned);
 
   const renderReservation = (res) => (
-    <li key={res.id} className="border-b py-2">
-      <strong>Reservation #{res.id}</strong> – {res.userName || "Ukendt bruger"} – {new Date(res.createdAt).toLocaleDateString()}
-      <ul className="ml-4 list-disc">
+    <li key={res.id} className="history-entry">
+      <strong>📌 Reservation #{res.id}</strong> – {res.userName || "Ukendt bruger"} – {new Date(res.createdAt).toLocaleDateString()}
+      <ul className="history-sublist">
         {res.items.map((item, idx) => (
           <li key={idx}>{item.equipmentName} – {item.quantity} stk.</li>
         ))}
@@ -33,9 +34,9 @@ export default function AdminHistoryTab() {
   );
 
   const renderLoan = (loan) => (
-    <li key={loan.id} className="border-b py-2">
-      <strong>Lån #{loan.id}</strong> – {loan.userName || "Ukendt bruger"} – {new Date(loan.createdAt).toLocaleDateString()}
-      <ul className="ml-4 list-disc">
+    <li key={loan.id} className="history-entry">
+      <strong>📦 Lån #{loan.id}</strong> – {loan.userName || "Ukendt bruger"} – {new Date(loan.createdAt).toLocaleDateString()}
+      <ul className="history-sublist">
         {loan.items.map((item, idx) => (
           <li key={idx}>{item.equipmentName} – {item.quantity} stk.</li>
         ))}
@@ -44,16 +45,16 @@ export default function AdminHistoryTab() {
   );
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Lånehistorik</h2>
+    <div className="tab">
+      <h1>📜 Udlånshistorik</h1>
 
-      <div className="mb-6">
-        <label htmlFor="filter" className="mr-2 font-medium">Filtrer visning:</label>
+      <div style={{ marginBottom: "1rem" }}>
+        <label htmlFor="filter" style={{ marginRight: "0.5rem", fontWeight: "bold" }}>Filtrer visning:</label>
         <select
           id="filter"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="p-2 rounded text-black"
+          style={{ padding: "0.5rem", borderRadius: "6px", minWidth: "180px" }}
         >
           <option value="all">Vis alt</option>
           <option value="reservations">Kun reservationer</option>
@@ -62,7 +63,7 @@ export default function AdminHistoryTab() {
         </select>
       </div>
 
-      <ul className="space-y-4">
+      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
         {filter === "all" && (
           <>
             {filteredReservations.map(renderReservation)}

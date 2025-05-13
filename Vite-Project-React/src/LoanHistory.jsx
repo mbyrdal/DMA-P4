@@ -6,20 +6,17 @@ function LoanHistory() {
   const [timeLeft, setTimeLeft] = useState("");
   const [loans, setLoans] = useState([]);
 
-  // Hent seneste reservation fra API (kun nyeste)
+  // Hent seneste reservation
   useEffect(() => {
     fetch("https://localhost:7092/api/reservation")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.length > 0) {
-          const latest = data[data.length - 1];
-          setReservation(latest);
-        }
-      })
-      .catch((err) => console.error("Fejl ved hentning af reservation:", err));
+      .then(res => res.json())
+      .then(data => {
+        const latest = data[data.length - 1];
+        if (latest?.items) setReservation(latest);
+      });
   }, []);
 
-  // Countdown til reservation udløber
+  // Nedtælling
   useEffect(() => {
     if (!reservation?.createdAt) return;
 
@@ -45,71 +42,45 @@ function LoanHistory() {
     return () => clearInterval(interval);
   }, [reservation]);
 
-  // Her skal aktive og afsluttede lån hentes fra backend senere
-  // Denne logik skal opdateres når brugere implementeres ✅
-  useEffect(() => {
-    // Midlertidig tomt array – fjernet dummy data
-    setLoans([]);
-  }, []);
-
   const handleDeleteReservation = () => {
     if (!reservation) return;
 
     fetch(`https://localhost:7092/api/reservation/${reservation.id}`, {
       method: "DELETE"
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Kunne ikke slette reservation");
+      .then(res => {
+        if (!res.ok) throw new Error();
         setReservation(null);
         setTimeLeft("");
         alert("Reservation slettet.");
       })
-      .catch((err) => {
-        console.error("Fejl ved sletning:", err);
-        alert("Kunne ikke slette reservation.");
-      });
+      .catch(() => alert("Fejl ved sletning."));
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial", color: "white" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+    <div className="tab">
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+        <h1>📖 Din reservation</h1>
         <Link to="/">
-          <button style={{
-            backgroundColor: "#6c757d",
-            color: "white",
-            border: "none",
-            padding: "0.5rem 1rem",
-            borderRadius: "5px",
-            cursor: "pointer"
-          }}>
-            Tilbage til oversigten
+          <button style={{ backgroundColor: "#6c757d", color: "white", borderRadius: "5px", padding: "0.5rem 1rem" }}>
+            Tilbage
           </button>
         </Link>
       </div>
 
-      <h2>Lånehistorik</h2>
-
-      <section style={{ marginTop: "2rem" }}>
-        <h3>Aktiv reservation</h3>
+      <section style={{ marginBottom: "2rem" }}>
+        <h2>📌 Aktiv reservation</h2>
         {reservation && reservation.items?.length > 0 ? (
           <>
-            <ul>
+            <ul style={{ listStyle: "disc", paddingLeft: "1.5rem" }}>
               {reservation.items.map((item, idx) => (
                 <li key={idx}>{item.equipmentName} – {item.quantity} stk.</li>
               ))}
             </ul>
-            <p style={{ marginTop: "0.5rem" }}>Udløber om: {timeLeft}</p>
+            <p style={{ marginTop: "0.5rem" }}>⏳ Udløber om: {timeLeft}</p>
             <button
               onClick={handleDeleteReservation}
-              style={{
-                marginTop: "1rem",
-                padding: "0.5rem 1rem",
-                backgroundColor: "#D9534F",
-                color: "white",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer"
-              }}
+              style={{ marginTop: "1rem", backgroundColor: "#D9534F", color: "white", padding: "0.5rem 1rem", borderRadius: "5px", border: "none" }}
             >
               Ryd reservation
             </button>
@@ -119,36 +90,10 @@ function LoanHistory() {
         )}
       </section>
 
-      <hr style={{ margin: "2rem 0" }} />
-
+      {/* Fremtidig funktionalitet til visning af lån */}
       <section>
-        <h3>Aktive lån</h3>
-        {loans.filter(l => !l.returnedAt).length > 0 ? (
-          <ul>
-            {loans.filter(l => !l.returnedAt).map(loan => (
-              <li key={loan.id}>
-                {loan.name} – Lånt den {new Date(loan.borrowedAt).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Ingen aktive lån.</p>
-        )}
-      </section>
-
-      <section style={{ marginTop: "2rem" }}>
-        <h3>Afsluttede lån</h3>
-        {loans.filter(l => l.returnedAt).length > 0 ? (
-          <ul>
-            {loans.filter(l => l.returnedAt).map(loan => (
-              <li key={loan.id}>
-                Afleverede {loan.name} den {new Date(loan.returnedAt).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Ingen afsluttede lån endnu.</p>
-        )}
+        <h2>📦 Lån</h2>
+        <p>(Denne funktion er endnu ikke implementeret.)</p>
       </section>
     </div>
   );

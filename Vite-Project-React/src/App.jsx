@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './Login';
+import AdminLogin from './AdminLogin';
 import EquipmentOverview from './EquipmentOverview';
 import LoanHistory from './LoanHistory';
-import AdminLogin from './AdminLogin'; // Tilføjet AdminLogin
-import AdminDashboard from './AdminDashboard'; // Tilføjet AdminDashboard
+import AdminDashboard from './AdminDashboard';
 import LogoutButton from './LogoutButton';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false); // Ny admin login state
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const adminLoggedIn = localStorage.getItem("isAdminLoggedIn") === "true";
-    setIsLoggedIn(loggedIn);
-    setIsAdminLoggedIn(adminLoggedIn);
+    setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
+    setIsAdminLoggedIn(localStorage.getItem("isAdminLoggedIn") === "true");
     setIsLoading(false);
   }, []);
 
@@ -36,8 +34,8 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setIsAdminLoggedIn(false);
-    localStorage.setItem("isLoggedIn", "false");
-    localStorage.setItem("isAdminLoggedIn", "false");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdminLoggedIn");
     navigate("/login");
   };
 
@@ -48,30 +46,39 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/admin-login" element={<AdminLogin onAdminLogin={handleAdminLogin} />} />
-        <Route
-          path="/history"
-          element={isLoggedIn ? <LoanHistory /> : <Navigate to="/login" />}
-        />
+
         <Route
           path="/"
           element={
             isLoggedIn ? (
               <>
                 <EquipmentOverview />
-                <LogoutButton onLogout={handleLogout} />
+                <div style={{ marginTop: "1rem" }}>
+                  <LogoutButton onLogout={handleLogout} />
+                </div>
               </>
             ) : (
               <Navigate to="/login" />
             )
           }
         />
+
+        <Route
+          path="/history"
+          element={
+            isLoggedIn ? <LoanHistory /> : <Navigate to="/login" />
+          }
+        />
+
         <Route
           path="/admin-dashboard"
           element={
             isAdminLoggedIn ? (
               <>
                 <AdminDashboard />
-                <LogoutButton onLogout={handleLogout} />
+                <div style={{ padding: "1rem" }}>
+                  <LogoutButton onLogout={handleLogout} isAdmin />
+                </div>
               </>
             ) : (
               <Navigate to="/admin-login" />

@@ -1,13 +1,14 @@
 import React from "react";
-import { useNavigate } from "react-router-dom"; // Change to useNavigate for v6+
+import { useNavigate } from "react-router-dom";
 
-function LogoutButton({ onLogout }) {
-  const navigate = useNavigate(); // useNavigate instead of useHistory
+function LogoutButton({ onLogout, isAdmin = false }) {
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     onLogout();
     localStorage.removeItem("isLoggedIn");
-    navigate("/login"); // Redirect to login page after logout
+    localStorage.removeItem("isAdminLoggedIn");
+    navigate(isAdmin ? "/admin-login" : "/login");
   };
 
   return (
@@ -18,8 +19,9 @@ function LogoutButton({ onLogout }) {
         backgroundColor: "#D9534F",
         color: "white",
         border: "none",
-        borderRadius: "5px",
+        borderRadius: "6px",
         cursor: "pointer",
+        fontWeight: "bold"
       }}
     >
       Log ud
