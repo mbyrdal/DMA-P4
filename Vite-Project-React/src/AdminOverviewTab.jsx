@@ -23,12 +23,6 @@ export default function AdminOverviewTab({ activeReservations, activeLoans, lowS
         <h2 style={cardTitle}>Aktive reservationer</h2>
         <p style={cardNumber}>{activeReservations}</p>
       </div>
-
-      <div style={cardStyle}>
-        <h2 style={cardTitle}>Aktive lån</h2>
-        <p style={cardNumber}>{activeLoans}</p>
-      </div>
-
       <div style={cardStyle}>
         <h2 style={cardTitle}>Lav lagerbeholdning</h2>
         <ul style={{ listStyleType: "disc", paddingLeft: "1.5rem", marginTop: "1rem" }}>
