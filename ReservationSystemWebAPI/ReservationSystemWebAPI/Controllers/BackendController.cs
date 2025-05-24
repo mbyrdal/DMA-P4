@@ -2,123 +2,144 @@
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
+using ReservationSystemWebAPI.Services;
 
 namespace ReservationSystemWebAPI.Controllers
 {
     /// <summary>
-    /// Controller for managing StorageItem items.<br/>
-    /// It allows for CRUD operations on items in storage, ie. CREATE, READ, UPDATE and DELETE.<br/>
-    /// Methods are conded to work asynchronously.<br/>
+    /// Controller til håndtering af CRUD-operationer på udstyr (StorageItem) i databasen.<br/>
+    /// Denne controller modtager HTTP-forespørgsler og videresender dem til <see cref="IStorageItemService"/>,
+    /// som håndterer den egentlige forretningslogik og dataadgang via repositorylaget.<br/>
+    /// Alle metoder er asynkrone og returnerer relevante HTTP-statuskoder.
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class BackendController : ControllerBase
     {
-        private readonly ReservationDbContext _dbContext;
+        private readonly IStorageItemService _storageItemService;
 
-        public BackendController(ReservationDbContext dbContext)
+        public BackendController(IStorageItemService storageItemService)
         {
             // Use DI to instantiate and make use of the existing ReservationDbContext.
             // ReservationDbContext contains the DbSet<StorageItem> StorageItem property (access to the database).
-            _dbContext = dbContext;
+            _storageItemService = storageItemService;
         }
 
         // GET: api/Backend
         /// <summary>
-        /// This method retrieves all items from the StorageItem table.<br/>
-        /// <returns>Returns a list of all StorageItem items in its respective Item table.</returns>
+        /// Henter alt udstyr i databasen.<br/>
+        /// Ved succes returneres listen af genstande.<br/>
+        /// Ved fejl returneres en 500-statuskode med fejlbesked.
         /// </summary>
+        /// <returns>En liste af <see cref="StorageItem"/>.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<StorageItem>>> GetItems() // TODO: Add proper error handling.
+        public async Task<ActionResult<IEnumerable<StorageItem>>> GetItems()
         {
-            var items = await _dbContext.WEXO_DEPOT.ToListAsync();
+            var items = await _storageItemService.GetAllItemsAsync();
             return Ok(items);
         }
 
         // GET: api/Backend/5
         /// <summary>
-        /// This method retrieves a specific item from the StorageItem table based on its identifier (ID).
+        /// Henter et enkelt stykke udstyr baseret på ID.<br/>
+        /// Returnerer 404 hvis ikke fundet.
         /// </summary>
-        /// <param name="id">The identifier used to categorize its position in the table.</param>
-        /// <returns>A StorageItem item.</returns>
+        /// <param name="id">ID for genstanden der ønskes hentet.</param>
+        /// <returns>Et <see cref="StorageItem"/>-objekt.</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<StorageItem>> GetItem(int id) // TODO: Add proper error handling.
+        public async Task<ActionResult<StorageItem>> GetItem(int id)
         {
-            var item = await _dbContext.WEXO_DEPOT.FindAsync(id);
-            if (item == null) return NotFound();
-            return Ok(item);
+            try
+            {
+                StorageItem udstyr = await _storageItemService.GetItemByIdAsync(id);
+                return Ok(udstyr);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // POST: api/Backend
         /// <summary>
-        /// This method creates a new item instance in the StorageItem table.<br/>
-        /// The details of the item are provided in the request body.<br/>
+        /// Opretter et nyt stykke udstyr i databasen.<br/>
+        /// Returnerer 201 Created ved succes.
         /// </summary>
-        /// <param name="newItem">The request body to be used to create a new instance.</param>
-        /// <returns>A status code depending on the outcome of the method. 200 OK if successful.</returns>
+        /// <param name="newItem">Den nye genstand der skal tilføjes.</param>
+        /// <returns>Statuskode og oprettet genstand.</returns>
         [HttpPost]
-        public async Task<ActionResult<StorageItem>> CreateItem([FromBody] StorageItem newItem) // TODO: Add proper error handling.
+        public async Task<ActionResult<StorageItem>> CreateItem([FromBody] StorageItem newItem)
         {
-            _dbContext.WEXO_DEPOT.Add(newItem);
-            await _dbContext.SaveChangesAsync(); // SQL INSERT
-
-            return CreatedAtAction(nameof(GetItem), new { id = newItem.Id }, newItem);
+            try
+            {
+                await _storageItemService.AddItemAsync(newItem);
+                return CreatedAtAction(nameof(GetItem), new { id = newItem.Id }, newItem);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex) 
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+            
         }
 
         // PUT: api/Backend/5
         /// <summary>
-        /// This method updates an existing item in the StorageItem table.<br/>
-        /// The updated details are provided by the request body.<br/>
+        /// Opdaterer et eksisterende stykke udstyr.<br/>
+        /// Returnerer 204 NoContent ved succes.
         /// </summary>
-        /// <param name="id">ID of the existing item to be updated.</param>
-        /// <param name="updatedItem">The request body containing the new details to be used.</param>
-        /// <returns>A status code depending on the outcome of the method. <br/>.
-        /// 204 NoContent if successful.</returns>
+        /// <param name="id">ID på genstanden der skal opdateres.</param>
+        /// <param name="updatedItem">De nye data for genstanden.</param>
+        /// <returns>Statuskode afhængigt af resultatet.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItem updatedItem) // TODO: Add proper error handling.
+        public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItem updatedItem)
         {
             if (id != updatedItem.Id)
             {
-                return BadRequest("ID mismatch.");
+                return BadRequest(new { message = "Mismatch på ID'er" });
             }
-
-            // EntityState is used to mark changes to the entity/database.
-            // Modified: An item has been updated in the database, hence SQL UPDATE.
-            _dbContext.Entry(updatedItem).State = EntityState.Modified;
 
             try
             {
-                await _dbContext.SaveChangesAsync(); // SQL UPDATE
+                await _storageItemService.UpdateItemAsync(updatedItem);
+                return NoContent(); // Status 204 ved succes
             }
-            catch (DbUpdateConcurrencyException)
+            catch (KeyNotFoundException ex)
             {
-                if (!_dbContext.WEXO_DEPOT.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                throw;
+                return NotFound(new { message = ex.Message });
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         // DELETE: api/Backend/5
         /// <summary>
-        /// This method deletes an existing item in the database.
+        /// Sletter udstyr baseret på ID.<br/>
+        /// Returnerer 204 NoContent ved succes.
         /// </summary>
-        /// <param name="id">The identifier of an existing item entry to be deleted.</param>
-        /// <returns>A status code depending on the outcome.<br/>
-        /// 204 NoContent if successful.</returns>
+        /// <param name="id">ID på den genstand der ønskes slettet.</param>
+        /// <returns>Statuskode afhængigt af resultatet.</returns>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteItem(int id) // TODO: Add proper error handling.
+        public async Task<IActionResult> DeleteItem(int id)
         {
-            var item = await _dbContext.WEXO_DEPOT.FindAsync(id);
-            if (item == null) return NotFound();
-
-            _dbContext.WEXO_DEPOT.Remove(item);
-            await _dbContext.SaveChangesAsync();
-
-            return NoContent();
+            try
+            {
+                await _storageItemService.DeleteItemAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
     }
 }
