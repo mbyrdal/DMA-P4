@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using ReservationSystemWebAPI.DataAccess;
+using ReservationSystemWebAPI.Repositories;
+using ReservationSystemWebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +24,13 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader());
 });
 
+// Registrer DbContext med SQL Server (for DAL)
 builder.Services.AddDbContext<ReservationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// Registrer repositories og services
+builder.Services.AddScoped<IStorageItemRepository, StorageItemRepository>();
+builder.Services.AddScoped<IStorageItemService, StorageItemService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
