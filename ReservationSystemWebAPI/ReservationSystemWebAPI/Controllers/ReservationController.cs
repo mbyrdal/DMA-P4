@@ -128,28 +128,34 @@ namespace ReservationSystemWebAPI.Controllers
             return NoContent();
         }
 
-        
-        [HttpPatch("{reservationId}/return/{itemId}")]
-        public async Task<IActionResult> ReturnItem(int reservationId, int itemId)
+        [HttpPatch("returnItems/{reservationId}")]
+        public async Task<IActionResult> ReturnItems(int reservationId)
         {
             var reservation = await _context.Reservations
                 .Include(r => r.Items)
                 .FirstOrDefaultAsync(r => r.Id == reservationId);
 
             if (reservation == null)
-                return NotFound("Reservation not found.");
+                return NotFound("Reservation ikke fundet.");
 
-            var item = reservation.Items.FirstOrDefault(i => i.Id == itemId);
-            if (item == null)
-                return NotFound("Item not found in reservation.");
+            if (reservation.Items.Count == 0)
+                return NotFound("Intet udstyr er tilknyttet denne reservation.");
 
-            item.IsReturned = true;
-
-            var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
-            if (equipment != null)
+            foreach (var item in reservation.Items)
             {
-                equipment.Antal += item.Quantity;
+                if (!item.IsReturned)
+                {
+                    item.IsReturned = true;
+
+                    var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
+                    if (equipment != null)
+                    {
+                        equipment.Antal += item.Quantity;
+                    }
+                }
             }
+
+            reservation.Status = "Inaktiv";
 
             await _context.SaveChangesAsync();
             return NoContent();
