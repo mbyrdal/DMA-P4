@@ -11,9 +11,7 @@ function LoanHistory() {
   const completedPickups = reservations.filter(r => r.status === "Aktiv" && r.isCollected);
   const previousReservations = reservations.filter(r => r.status !== "Aktiv");
 
-  useEffect(() => {
-    if (!user?.email) return;
-
+  const fetchReservations = () => {
     fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
       .then(res => res.json())
       .then(data => {
@@ -21,6 +19,11 @@ function LoanHistory() {
         setReservations(sorted);
       })
       .catch(err => console.error("Fejl ved hentning af reservationer:", err));
+  };
+
+  useEffect(() => {
+    if (!user?.email) return;
+    fetchReservations();
   }, [user?.email]);
 
   useEffect(() => {
@@ -62,12 +65,7 @@ function LoanHistory() {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Kunne ikke slette reservation");
-        setReservations(prev => prev.filter(r => r.id !== reservationId));
-        setTimeLeft(prev => {
-          const copy = { ...prev };
-          delete copy[reservationId];
-          return copy;
-        });
+        fetchReservations();
         alert("Reservation slettet.");
       })
       .catch((err) => {
@@ -85,11 +83,7 @@ function LoanHistory() {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Kunne ikke markere som afhentet");
-        setReservations(prev =>
-          prev.map(r =>
-            r.id === reservationId ? { ...r, isCollected: true, status: "Aktiv" } : r
-          )
-        );
+        fetchReservations();
         alert("Reservation markeret som afhentet.");
       })
       .catch((err) => {
@@ -99,34 +93,25 @@ function LoanHistory() {
   };
 
   const handleReturnReservation = (reservationId) => {
-  fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "Inaktiv" })
-  })
-    .then(res => {
-      if (!res.ok) throw new Error("Kunne ikke opdatere status til Inaktiv");
-      
-      return fetch(`https://localhost:7092/api/reservation/createHistory/${reservationId}`, {
-        method: "POST"
+    fetch(`https://localhost:7092/api/reservation/returnItems/${reservationId}`, {
+      method: "PATCH"
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Kunne ikke returnere udstyr");
+        return fetch(`https://localhost:7092/api/reservation/createHistory/${reservationId}`, {
+          method: "POST"
+        });
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Kunne ikke gemme historik");
+        fetchReservations();
+        alert("Reservation afleveret og historik oprettet.");
+      })
+      .catch((err) => {
+        console.error("Fejl ved aflevering:", err);
+        alert("Aflevering fejlede.");
       });
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Kunne ikke gemme historik");
-      
-      setReservations(prev =>
-        prev.map(r =>
-          r.id === reservationId ? { ...r, status: "Inaktiv" } : r
-        )
-      );
-      alert("Reservation afleveret og historik oprettet.");
-    })
-    .catch((err) => {
-      console.error("Fejl ved aflevering:", err);
-      alert("Aflevering fejlede.");
-    });
-};
-
+  };
 
   return (
     <div style={{ padding: "2rem", fontFamily: "Arial", color: "white" }}>
@@ -147,7 +132,6 @@ function LoanHistory() {
 
       <h2>Lånehistorik</h2>
 
-      {/* Afventer afhentning */}
       <section style={{ marginTop: "2rem" }}>
         <h3>Afventer afhentning</h3>
         {pendingPickups.length > 0 ? (
@@ -162,37 +146,8 @@ function LoanHistory() {
               <p style={{ marginTop: "0.5rem" }}>
                 Udløber om: {timeLeft[reservation.id] || "Beregner..."}
               </p>
-
-              <button
-                onClick={() => handleDeleteReservation(reservation.id)}
-                style={{
-                  marginTop: "0.5rem",
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "#D9534F",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer"
-                }}
-              >
-                Ryd denne reservation
-              </button>
-
-              <button
-                onClick={() => handleMarkCollected(reservation.id)}
-                style={{
-                  marginTop: "0.5rem",
-                  marginLeft: "0.5rem",
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "#5CB85C",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer"
-                }}
-              >
-                Markér som afhentet
-              </button>
+              <button onClick={() => handleDeleteReservation(reservation.id)} style={{ marginTop: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "#D9534F", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>Ryd denne reservation</button>
+              <button onClick={() => handleMarkCollected(reservation.id)} style={{ marginTop: "0.5rem", marginLeft: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "#5CB85C", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>Markér som afhentet</button>
             </div>
           ))
         ) : (
@@ -200,44 +155,19 @@ function LoanHistory() {
         )}
       </section>
 
-      {/* Allerede afhentet */}
       <section style={{ marginTop: "2rem" }}>
         <h3>Afhentede reservationer</h3>
         {completedPickups.length > 0 ? (
           completedPickups.map(res => (
-            <div key={res.id} style={{
-              backgroundColor: "#1e1e1e",
-              padding: "1rem",
-              marginBottom: "1rem",
-              borderRadius: "8px",
-              boxShadow: "0 0 5px rgba(255, 255, 255, 0.05)"
-            }}>
+            <div key={res.id} style={{ backgroundColor: "#1e1e1e", padding: "1rem", marginBottom: "1rem", borderRadius: "8px", boxShadow: "0 0 5px rgba(255, 255, 255, 0.05)" }}>
               <p><strong>Oprettet:</strong> {new Date(res.createdAt).toLocaleString()}</p>
               {res.items.map((item, idx) => (
-                <div key={idx}>
-                  <strong>{item.equipment}</strong> – {item.quantity} stk.
-                </div>
+                <div key={idx}><strong>{item.equipment}</strong> – {item.quantity} stk.</div>
               ))}
-              <p style={{ color: "#5CB85C", marginTop: "0.5rem" }}>
-                Reservationen er afhentet.
-              </p>
-                 {res.status === "Aktiv" && (
-                  <button
-                  onClick={() => handleReturnReservation(res.id)}
-                    style={{
-                    marginTop: "0.5rem",
-                    marginLeft: "0.5rem",
-                    padding: "0.5rem 1rem",
-                    backgroundColor: "#0275d8",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer"
-                }}
-              >
-                Aflever
-              </button>
-        )}
+              <p style={{ color: "#5CB85C", marginTop: "0.5rem" }}>Reservationen er afhentet.</p>
+              {res.status === "Aktiv" && (
+                <button onClick={() => handleReturnReservation(res.id)} style={{ marginTop: "0.5rem", marginLeft: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "#0275d8", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>Aflever</button>
+              )}
             </div>
           ))
         ) : (
@@ -245,27 +175,16 @@ function LoanHistory() {
         )}
       </section>
 
-      {/* Afsluttede/annullerede reservationer */}
       <section style={{ marginTop: "2rem" }}>
         <h3>Afsluttede reservationer</h3>
         {previousReservations.length > 0 ? (
           previousReservations.map((res) => (
-            <div key={res.id} style={{
-              backgroundColor: "#1e1e1e",
-              padding: "1rem",
-              marginBottom: "1rem",
-              borderRadius: "8px",
-              boxShadow: "0 0 5px rgba(255, 255, 255, 0.05)"
-            }}>
+            <div key={res.id} style={{ backgroundColor: "#1e1e1e", padding: "1rem", marginBottom: "1rem", borderRadius: "8px", boxShadow: "0 0 5px rgba(255, 255, 255, 0.05)" }}>
               <p><strong>Oprettet:</strong> {new Date(res.createdAt).toLocaleString()}</p>
               {res.items.map((item, idx) => (
-                <div key={idx}>
-                  <strong>{item.equipment}</strong> – {item.quantity} stk.
-                </div>
+                <div key={idx}><strong>{item.equipment}</strong> – {item.quantity} stk.</div>
               ))}
-              <p style={{ marginTop: "0.5rem", color: "#ccc" }}>
-                Status: <span style={{ fontWeight: "bold", color: "#aaa" }}>{res.status}</span>
-              </p>
+              <p style={{ marginTop: "0.5rem", color: "#ccc" }}>Status: <span style={{ fontWeight: "bold", color: "#aaa" }}>{res.status}</span></p>
             </div>
           ))
         ) : (
