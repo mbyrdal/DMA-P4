@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.DTOs;
+using ReservationSystemWebAPI.Services;
 
 namespace ReservationSystemWebAPI.Controllers
 {
@@ -10,33 +11,33 @@ namespace ReservationSystemWebAPI.Controllers
     [ApiController]
     public class LoginController : ControllerBase
     {
-        private readonly ReservationDbContext _context;
+        private readonly ILoginService _loginService;
 
-        public LoginController(ReservationDbContext context)
+        public LoginController(ILoginService loginService)
         {
-            _context = context;
+            _loginService = loginService;
         }
 
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (user == null)
+            try
             {
-                return Unauthorized($"Bruger ikke fundet med denne e-mail: {request.Email}");
+                var user = await _loginService.AuthenticateUserAsync(request.Email, request.Password);
+                return Ok(new { user.Email, user.Role });
             }
-
-            // Check if hashed password matches the password stored in the database
-            bool passwordMatch = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
-            if (!passwordMatch)
+            catch (KeyNotFoundException ex)
             {
-                return Unauthorized("Forkert adgangskode.");
+                return NotFound(ex.Message);
             }
-
-            return Ok(new { user.Email, user.Role });
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Intern serverfejl: {ex.Message}");
+            }
         }
     }
-
 }
