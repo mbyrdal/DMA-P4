@@ -29,11 +29,11 @@ function Login() {
         return;
       }
 
-      const user = await response.json(); // { email, role }
+      const user = await response.json(); // { email, role, token }
 
-      login(user);              // gem bruger i context
+      login(user);              // Store token and user info in context and localStorage
       setError("");
-      navigate("/");            // redirect til overview
+      navigate("/");            // Redirect to homepage or dashboard
     } catch (err) {
       console.error("Login-fejl:", err);
       setError("Der opstod en fejl ved login.");

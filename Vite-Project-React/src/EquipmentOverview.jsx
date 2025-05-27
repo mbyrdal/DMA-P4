@@ -25,16 +25,26 @@ function EquipmentOverview() {
   };
 
   useEffect(() => {
-    fetch("https://localhost:7092/api/backend")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Kunne ikke hente udstyr");
-        }
-        return response.json();
-      })
-      .then((data) => setEquipmentList(data))
-      .catch((error) => console.error("Fejl ved hentning af udstyr:", error));
-  }, []);
+  if (!user?.token) {
+    console.warn("Ingen JwT token tilgængelig - Fetch annulleret");
+    return;
+  }
+
+  fetch("https://localhost:7092/api/backend", {
+    headers: {
+      "Authorization": `Bearer ${user.token}`,
+      "Content-Type": "application/json"
+    }
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Kunne ikke hente udstyr");
+      }
+      return response.json();
+    })
+    .then((data) => setEquipmentList(data))
+    .catch((error) => console.error("Fejl ved hentning af udstyr: ", error));
+}, [user?.token]);
 
   const handleReserve = (id) => {
     const selectedItem = equipmentList.find(item => item.id === id);

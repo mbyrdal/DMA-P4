@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
@@ -12,6 +13,7 @@ namespace ReservationSystemWebAPI.Controllers
     /// som håndterer den egentlige forretningslogik og dataadgang via repositorylaget.<br/>
     /// Alle metoder er asynkrone og returnerer relevante HTTP-statuskoder.
     /// </summary>
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class BackendController : ControllerBase
