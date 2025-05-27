@@ -16,15 +16,11 @@ function Login() {
     try {
       const audience = window.location.origin; // frontend url, such as localhost:5173
 
-      console.log("Sending login request with: ", { email, password, audience });
-
       const response = await fetch("https://localhost:7092/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, audience })
       });
-
-      console.log("Login response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
