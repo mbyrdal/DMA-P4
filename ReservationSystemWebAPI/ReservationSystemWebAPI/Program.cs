@@ -35,8 +35,16 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
-        ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        // ValidAudience = jwtSettings.Audience, --> WE MUST COMMENT THIS OUT TO AVOID AUDIENCE VALIDATION, SINCE WE ARE RUNNING THE FRONTEND (AUDIENCE) USING MULTIPLE PORTS IN DEVELOPMENT
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+
+        AudienceValidator = (audiences, securityToken, validationParameters) =>
+        {
+            // Accept token if any audience claim starts with "https://localhost"
+            // Allows for multiple port usage, ie. localhost:5173, localhost:5174, etc.
+            return audiences.Any(aud => aud.StartsWith("https://localhost"));
+        }
+
     };
 });
 

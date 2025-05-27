@@ -9,4 +9,7 @@ public class LoginRequest
 
     [Required]
     public string Password { get; set; } = string.Empty;
+
+    // New property to accept the frontend URL including port
+    public string Audience { get; set; } = string.Empty;
 }

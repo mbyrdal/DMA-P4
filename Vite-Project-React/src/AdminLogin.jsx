@@ -14,10 +14,12 @@ function AdminLogin() {
     e.preventDefault();
 
     try {
+      const audience = window.location.origin; // frontend url, such as localhost:5173
+
       const response = await fetch("https://localhost:7092/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, audience })
       });
 
       if (!response.ok) {

@@ -39,8 +39,11 @@ namespace ReservationSystemWebAPI.Controllers
             {
                 var user = await _loginService.AuthenticateUserAsync(request.Email, request.Password);
 
+                // Define audience, ie. frontend including its port.
+                var audience = !string.IsNullOrEmpty(request.Audience) ? request.Audience : _configuration["JwtSettings:Audience"];
+
                 // Generate JwT token
-                var token = GenerateJwtToken(user.Email, user.Role);
+                var token = GenerateJwtToken(user.Email, user.Role, audience);
 
                 // Return user info and token
                 return Ok(new LoginResponse
@@ -64,12 +67,17 @@ namespace ReservationSystemWebAPI.Controllers
             }
         }
 
-        private string GenerateJwtToken(string email, string role)
+        private string GenerateJwtToken(string email, string role, string audience)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"];
             var issuer = jwtSettings["Issuer"];
+            /* 
+             * We do not use hardcoded audience in development, since we run the frontend on multiple ports.
+             * 
             var audience = jwtSettings["Audience"];
+             * 
+            */
             var expiryMinutes = int.Parse(jwtSettings["ExpiryMinutes"]);
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

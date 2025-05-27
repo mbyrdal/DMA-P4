@@ -9,6 +9,8 @@ function EquipmentOverview() {
   const [equipmentList, setEquipmentList] = useState([]);
   const [myReservation, setMyReservation] = useState([]);
   const [isModified, setIsModified] = useState(false);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const jwtIssuer = import.meta.env.VITE_JWT_ISSUER;
 
   const thStyle = {
     borderBottom: "1px solid white",
@@ -30,7 +32,7 @@ function EquipmentOverview() {
     return;
   }
 
-  fetch("https://localhost:7092/api/backend", {
+  fetch(`${backendUrl}/api/backend`, {
     headers: {
       "Authorization": `Bearer ${user.token}`,
       "Content-Type": "application/json"
@@ -143,7 +145,7 @@ function EquipmentOverview() {
     status: "Aktiv"
     };
 
-    fetch("https://localhost:7092/api/reservation", {
+    fetch(`${backendUrl}/api/reservation`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
