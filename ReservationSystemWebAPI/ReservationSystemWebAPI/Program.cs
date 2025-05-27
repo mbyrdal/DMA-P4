@@ -42,7 +42,7 @@ builder.Services.AddAuthentication(options =>
         {
             // Accept token if any audience claim starts with "https://localhost"
             // Allows for multiple port usage, ie. localhost:5173, localhost:5174, etc.
-            return audiences.Any(aud => aud.StartsWith("https://localhost"));
+            return audiences.Any(aud => aud.StartsWith("https://localhost") || aud.StartsWith("http://localhost"));
         }
 
     };
