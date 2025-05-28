@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace ReservationSystemWebAPI.Models
@@ -11,5 +12,9 @@ namespace ReservationSystemWebAPI.Models
         public string Reol { get; set; }
         public string Hylde { get; set; }
         public string Kasse { get; set; }
+
+        // OCC approach using RowVersion column
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!;
     }
 }

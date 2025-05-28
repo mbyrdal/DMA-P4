@@ -23,7 +23,7 @@ namespace ReservationSystemWebAPI.Services
             return reservations;
         }
 
-        public async Task<Reservation> GetByIdAsync(int id)
+        public async Task<Reservation?> GetByIdAsync(int id)
         {
             var reservation = await _repository.GetByIdAsync(id);
             if (reservation == null)

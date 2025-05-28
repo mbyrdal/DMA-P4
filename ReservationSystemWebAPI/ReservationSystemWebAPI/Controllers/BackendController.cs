@@ -113,6 +113,11 @@ namespace ReservationSystemWebAPI.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("Opdatering mislykkedes"))
+            {
+                // Handle optimistic concurrency conflict
+                return Conflict(new { message = ex.Message }); // Status 409 if concurrency conflict occurs
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = ex.Message });

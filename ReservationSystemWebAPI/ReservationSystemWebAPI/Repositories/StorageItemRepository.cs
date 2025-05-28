@@ -37,8 +37,19 @@ namespace ReservationSystemWebAPI.Repositories
 
         public async Task<int> UpdateAsync(StorageItem updateItem)
         {
-            _dbContext.WEXO_DEPOT.Update(updateItem);
-            return await _dbContext.SaveChangesAsync();
+            _dbContext.Attach(updateItem); // Attach item and mark it as modified
+            _dbContext.Entry(updateItem).Property(si => si.RowVersion).OriginalValue = updateItem.RowVersion; // Set original RowVersion for concurrency check (si = storageItem)
+            _dbContext.Entry(updateItem).State = EntityState.Modified; // Signal to EF that we wish to update this item
+
+            try
+            {
+                return await _dbContext.SaveChangesAsync();
+            }
+            catch(DbUpdateConcurrencyException)
+            {
+                // Pass along to service layer for error handling
+                throw;
+            }
         }
 
         public async Task<int> RemoveAsync(int id)

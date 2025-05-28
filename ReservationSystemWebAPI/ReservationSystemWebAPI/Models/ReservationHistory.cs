@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ReservationSystemWebAPI.Models
 {
@@ -17,6 +18,6 @@ namespace ReservationSystemWebAPI.Models
         // public List<ReservationItems> Items { get; set; } = new();
 
         [ForeignKey("ReservationId")]
-        public Reservation Reservation { get; set; } // Navigation til den oprindelige reservation
+        public Reservation? Reservation { get; set; } // Navigation til den oprindelige reservation
     }
 }

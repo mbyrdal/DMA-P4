@@ -1,4 +1,5 @@
-﻿using ReservationSystemWebAPI.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using ReservationSystemWebAPI.Models;
 
 namespace ReservationSystemWebAPI.Services
 {
@@ -78,9 +79,9 @@ namespace ReservationSystemWebAPI.Services
         /// <param name="storageItem">Eksisterende udstyr (StorageItem) objekt, som skal opdateres.</param>
         public async Task UpdateItemAsync(StorageItem storageItem)
         {
-            var exists = await _storageItemAccessPoint.ExistsAsync(storageItem.Id);
+            var itemExists = await _storageItemAccessPoint.ExistsAsync(storageItem.Id);
 
-            if (!exists)
+            if(!itemExists)
             {
                 throw new KeyNotFoundException($"Kan ikke opdatere udstyret med ID {storageItem.Id}. Udstyret {storageItem.Navn} findes ikke.");
             }
@@ -89,7 +90,12 @@ namespace ReservationSystemWebAPI.Services
             {
                 await _storageItemAccessPoint.UpdateAsync(storageItem);
             }
-            catch (Exception ex)
+            catch (DbUpdateConcurrencyException)
+            {
+                // Handle concurrency conflict
+                throw new InvalidOperationException("Opdatering mislykkedes, fordi en anden bruger har ændret på lageret siden da. Refresh og prøv igen.");
+            }
+            catch(Exception ex)
             {
                 throw new InvalidOperationException("Der opstod en fejl under opdatering af udstyr i lageret. " +
                                                     "Tjek venligst forbindelsen til databasen og prøv igen.", ex);

@@ -12,7 +12,7 @@ namespace ReservationSystemWebAPI.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public List<ReservationItems> Items { get; set; } = new();
         public bool IsCollected { get; set; }
-        public string Status { get; set; }
+        public string? Status { get; set; }
     }
 
     public class ReservationItems

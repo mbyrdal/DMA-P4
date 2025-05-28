@@ -16,7 +16,7 @@ namespace ReservationSystemWebAPI.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<User> GetUserByEmailAsync(string email)
+        public async Task<User?> GetUserByEmailAsync(string email)
         {
             // Fetch user by email from the database
             return await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
