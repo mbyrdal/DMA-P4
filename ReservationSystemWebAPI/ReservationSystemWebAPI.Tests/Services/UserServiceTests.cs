@@ -23,7 +23,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task GetAllAsync_UsersExist_ReturnsUserList()
         {
-            // Test: Returnerer liste af brugere når brugere findes
+            // Verificerer at en liste med brugere returneres korrekt, når brugere findes i databasen
 
             // Arrange
             var users = new List<User>
@@ -31,7 +31,6 @@ namespace ReservationSystemWebAPI.Tests.Services
                 new User { Id = 1, Email = "a@b.com" },
                 new User { Id = 2, Email = "c@d.com" }
             };
-
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(users);
 
             // Act
@@ -45,7 +44,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task GetAllAsync_RepositoryReturnsNull_ThrowsArgumentNullException()
         {
-            // Test: Kaster hvis repo returnerer null
+            // Forventer ArgumentNullException hvis repository returnerer null
 
             // Arrange
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<User>)null);
@@ -57,7 +56,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task GetAllAsync_EmptyList_ThrowsInvalidOperationException()
         {
-            // Test: Kaster hvis listen er tom
+            // Forventer InvalidOperationException hvis listen af brugere er tom
 
             // Arrange
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
@@ -69,11 +68,10 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AddAsync_ValidUser_ReturnsNewUserId()
         {
-            // Test: Tilføj bruger med gyldig email → returner ID
+            // Bekræfter at ID returneres korrekt når bruger oprettes med gyldig e-mail
 
             // Arrange
             var user = new User { Email = "test@wexo.dk" };
-
             _mockRepo.Setup(r => r.AddAsync(user)).ReturnsAsync(42);
 
             // Act
@@ -86,7 +84,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AddAsync_InvalidUserEmail_ThrowsArgumentException()
         {
-            // Test: Hvis email er tom, kastes ArgumentException
+            // Forventer ArgumentException ved tom eller ugyldig e-mail
 
             // Arrange
             var user = new User { Email = "" };
@@ -98,12 +96,11 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task GetByIdAsync_ValidId_ReturnsUser()
         {
-            // Test: Returnerer bruger når ID findes
+            // Bekræfter at korrekt bruger returneres, når ID findes
 
             // Arrange
             int id = 1;
             var user = new User { Id = id, Email = "test@wexo.dk" };
-
             _mockRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(user);
 
             // Act
@@ -117,7 +114,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task GetByIdAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Test: Kaster hvis bruger ikke findes
+            // Forventer KeyNotFoundException hvis bruger ikke findes med givent ID
 
             // Arrange
             int id = 99;
@@ -130,11 +127,10 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task UpdateAsync_UserExists_ReturnsUserId()
         {
-            // Test: Returnerer ID ved opdatering når bruger findes
+            // Verificerer at opdatering returnerer korrekt ID, når bruger eksisterer
 
             // Arrange
             var user = new User { Id = 2, Email = "opdateret@wexo.dk" };
-
             _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
             _mockRepo.Setup(r => r.UpdateAsync(user)).ReturnsAsync(user.Id);
 
@@ -148,11 +144,10 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task UpdateAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Test: Kaster hvis bruger ikke findes
+            // Forventer KeyNotFoundException hvis bruger ikke findes ved opdatering
 
             // Arrange
             var user = new User { Id = 99, Email = "ukendt@wexo.dk" };
-
             _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(false);
 
             // Act & Assert
@@ -162,11 +157,10 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task UpdateAsync_RepositoryFails_ThrowsInvalidOperationException()
         {
-            // Test: Repository kaster exception → service pakker den i InvalidOperationException
+            // Forventer InvalidOperationException hvis repository kaster en exception under opdatering
 
             // Arrange
             var user = new User { Id = 3, Email = "fejl@wexo.dk" };
-
             _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
             _mockRepo.Setup(r => r.UpdateAsync(user)).ThrowsAsync(new Exception("DB-fejl"));
 
@@ -177,11 +171,10 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task DeleteAsync_UserExists_ReturnsUserId()
         {
-            // Test: Returnerer ID hvis sletning lykkes
+            // Bekræfter at sletning returnerer brugerens ID, når bruger findes
 
             // Arrange
             int id = 4;
-
             _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
             _mockRepo.Setup(r => r.DeleteAsync(id)).ReturnsAsync(id);
 
@@ -195,7 +188,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task DeleteAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Test: Bruger findes ikke → kast KeyNotFoundException
+            // Forventer KeyNotFoundException hvis bruger ikke findes ved sletning
 
             // Arrange
             int id = 123;
@@ -208,17 +201,15 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task DeleteAsync_RepositoryFails_ThrowsInvalidOperationException()
         {
-            // Test: Repository fejler under sletning
+            // Forventer InvalidOperationException hvis repository kaster en exception under sletning
 
             // Arrange
             int id = 5;
-
             _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
             _mockRepo.Setup(r => r.DeleteAsync(id)).ThrowsAsync(new Exception("DB-fejl"));
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteAsync(id));
         }
-
     }
 }

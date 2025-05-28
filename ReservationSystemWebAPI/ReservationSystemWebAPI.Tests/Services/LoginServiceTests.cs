@@ -22,7 +22,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AuthenticateUserAsync_ValidCredentials_ReturnsUser()
         {
-            // Test: Brugeren findes og adgangskoden matcher → returner bruger
+            // Verificerer at brugeren returneres korrekt ved gyldige loginoplysninger
 
             // Arrange
             var email = "test@example.com";
@@ -49,7 +49,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AuthenticateUserAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Test: Brugeren findes ikke → kast KeyNotFoundException
+            // Forventer KeyNotFoundException når brugeren ikke findes i databasen
 
             // Arrange
             var email = "ukendt@example.com";
@@ -64,7 +64,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AuthenticateUserAsync_WrongPassword_ThrowsUnauthorizedAccessException()
         {
-            // Test: Brugeren findes, men adgangskoden matcher ikke → kast UnauthorizedAccessException
+            // Forventer UnauthorizedAccessException når adgangskoden er forkert
 
             // Arrange
             var email = "test@example.com";
