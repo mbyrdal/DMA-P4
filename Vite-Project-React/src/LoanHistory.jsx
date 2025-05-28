@@ -12,9 +12,20 @@ function LoanHistory() {
   const previousReservations = reservations.filter(r => r.status !== "Aktiv");
 
   const fetchReservations = () => {
-    fetch(`https://localhost:7092/api/reservation/user/${user.email}`)
-      .then(res => res.json())
+    fetch(`https://localhost:7092/api/reservation/user/${user.email}`, {
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+        "Content-Type": "application/json",
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        // Ensure the rowVersion field is present in data if your backend sends it
         const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setReservations(sorted);
       })
@@ -22,9 +33,9 @@ function LoanHistory() {
   };
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.email || !user?.token) return;
     fetchReservations();
-  }, [user?.email]);
+  }, [user?.email, user?.token]);
 
   useEffect(() => {
     if (pendingPickups.length === 0) return;
@@ -61,7 +72,10 @@ function LoanHistory() {
 
   const handleDeleteReservation = (reservationId) => {
     fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+      }
     })
       .then((res) => {
         if (!res.ok) throw new Error("Kunne ikke slette reservation");
@@ -74,12 +88,26 @@ function LoanHistory() {
       });
   };
 
+  // UPDATED handleMarkCollected to PATCH/PUT with rowVersion and isCollected
   const handleMarkCollected = (reservationId) => {
-    fetch(`https://localhost:7092/api/reservation/markcollected/${reservationId}`, {
-      method: "PATCH",
+    const reservation = reservations.find(r => r.id === reservationId);
+    if (!reservation) {
+      alert("Reservation ikke fundet.");
+      return;
+    }
+
+    const payload = {
+      isCollected: true,
+      rowVersion: reservation.rowVersion // Ensure this field is included in fetched data
+    };
+
+    fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
+      method: "PUT", // or "PATCH" if your API supports partial update
       headers: {
+        "Authorization": `Bearer ${user.token}`,
         "Content-Type": "application/json"
-      }
+      },
+      body: JSON.stringify(payload)
     })
       .then((res) => {
         if (!res.ok) throw new Error("Kunne ikke markere som afhentet");
@@ -94,12 +122,18 @@ function LoanHistory() {
 
   const handleReturnReservation = (reservationId) => {
     fetch(`https://localhost:7092/api/reservation/returnItems/${reservationId}`, {
-      method: "PATCH"
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+      }
     })
       .then(res => {
         if (!res.ok) throw new Error("Kunne ikke returnere udstyr");
         return fetch(`https://localhost:7092/api/reservation/createHistory/${reservationId}`, {
-          method: "POST"
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${user.token}`,
+          }
         });
       })
       .then(res => {
@@ -184,11 +218,11 @@ function LoanHistory() {
               {res.items.map((item, idx) => (
                 <div key={idx}><strong>{item.equipment}</strong> – {item.quantity} stk.</div>
               ))}
-              <p style={{ marginTop: "0.5rem", color: "#ccc" }}>Status: <span style={{ fontWeight: "bold", color: "#aaa" }}>{res.status}</span></p>
+              <p style={{ marginTop: "0.5rem", color: "#bbb" }}>Status: {res.status}</p>
             </div>
           ))
         ) : (
-          <p>Ingen afsluttede reservationer endnu.</p>
+          <p>Ingen afsluttede reservationer.</p>
         )}
       </section>
     </div>

@@ -90,6 +90,8 @@ namespace ReservationSystemWebAPI.Services
             {
                 await _storageItemAccessPoint.UpdateAsync(storageItem);
             }
+
+            // Here's what the RowVersion used to be — if the current database version doesn’t match, throw a DbUpdateConcurrencyException.
             catch (DbUpdateConcurrencyException)
             {
                 // Handle concurrency conflict

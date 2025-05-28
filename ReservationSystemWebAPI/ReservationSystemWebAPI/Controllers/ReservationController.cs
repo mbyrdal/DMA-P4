@@ -41,26 +41,49 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Reservation>> Create(ReservationDto dto)
+        public async Task<IActionResult> Create([FromBody] ReservationCreateDto dto)
         {
-            var created = await _reservationService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            if(!ModelState.IsValid)
+            {
+                return BadRequest($"Invalid reservation data: {ModelState}");
+            }
+
+            try
+            {
+                var reservation = await _reservationService.CreateAsync(dto);
+                
+                if (reservation == null)
+                {
+                    // Something went wrong during creation
+                    return StatusCode(500, "Reservation kunne ikke oprettes. Tjek venligst dine data.");
+                }
+
+                // Return 201 created with the location of the new resource
+                return CreatedAtAction(nameof(GetById), new { id = reservation.Id }, reservation);
+            }
+            catch (Exception ex)
+            {
+                // Internal server error
+                return BadRequest($"Fejl ved oprettelse af reservation: {ex.Message}");
+            }
         }
 
-        [HttpPut("{id}/confirm")]
-        public async Task<IActionResult> Confirm(int id)
+        // General update endpoint for updating reservation (e.g. status, items)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ReservationUpdateDto dto)
         {
-            var success = await _reservationService.ConfirmAsync(id);
-            if (!success) return BadRequest("Reservation kunne ikke bekræftes");
-            return Ok("Reservation bekræftet");
-        }
+            try
+            {
+                var success = await _reservationService.UpdateAsync(id, dto);
+                if (!success)
+                    return NotFound();
 
-        [HttpPatch("markcollected/{id}")]
-        public async Task<IActionResult> MarkCollected(int id)
-        {
-            var success = await _reservationService.MarkAsCollectedAsync(id);
-            if (!success) return NotFound("Reservation ikke fundet");
-            return NoContent();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
@@ -85,14 +108,6 @@ namespace ReservationSystemWebAPI.Controllers
             var success = await _reservationService.CreateHistoryAsync(reservationId);
             if (!success) return NotFound("Fejl ved oprettelse af historik");
             return Ok("Historik gemt");
-        }
-
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody] Reservation update)
-        {
-            var success = await _reservationService.UpdateStatusAsync(id, update.Status);
-            if (!success) return NotFound();
-            return NoContent();
         }
     }
 }

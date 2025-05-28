@@ -5,50 +5,129 @@ export default function AdminEquipmentTab() {
   const [newItem, setNewItem] = useState({ navn: '', antal: 0, reol: '', hylde: '', kasse: '' });
   const [editItem, setEditItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  // Assuming you have a user context or some way to get the JWT token:
+  // For example, replace this with your actual user/token retrieval logic
+  const user = { token: localStorage.getItem('jwtToken') }; 
 
   useEffect(() => {
-    fetch("https://localhost:7092/api/backend")
-      .then(res => res.json())
-      .then(data => setEquipment(data));
-  }, []);
+    if (!user?.token) {
+      console.warn("Ingen JWT token tilgængelig - Fetch annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/backend`, {
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          console.error("Uautoriseret adgang - ugyldig eller udløbet token");
+          return;
+        }
+        return res.json();
+      })
+      .then(data => setEquipment(data))
+      .catch(err => console.error("Fetch error: ", err));
+  }, [user?.token, backendUrl]);
 
   const refreshEquipment = () => {
-    fetch("https://localhost:7092/api/backend")
+    if (!user?.token) {
+      console.warn("Ingen JWT token tilgængelig - Fetch annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/backend`, {
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then(res => res.json())
-      .then(data => setEquipment(data));
+      .then(data => setEquipment(data))
+      .catch(err => console.error("Fetch error: ", err));
   };
 
   const handleAdd = () => {
-    if (!newItem.navn || newItem.antal < 0 || !newItem.lokation) return;
+    if (!newItem.navn || newItem.antal < 0) return;
 
-    fetch("https://localhost:7092/api/backend", {
+    if (!user?.token) {
+      console.warn("Ingen JWT token tilgængelig - Tilføj annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/backend`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(newItem)
     })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          console.error("Uautoriseret adgang ved tilføj");
+          return;
+        }
+        return res.json();
+      })
       .then(() => {
-        setNewItem({ navn: '', antal: 0, lokation: '' });
+        setNewItem({ navn: '', antal: 0, reol: '', hylde: '', kasse: '' });
         refreshEquipment();
-      });
+      })
+      .catch(err => console.error("Fetch error: ", err));
   };
 
   const handleDelete = (id) => {
     if (!window.confirm("Er du sikker på at du vil slette udstyret?")) return;
-    fetch(`https://localhost:7092/api/backend/${id}`, { method: "DELETE" })
-      .then(() => setEquipment(prev => prev.filter(e => e.id !== id)));
+
+    if (!user?.token) {
+      console.warn("Ingen JWT token tilgængelig - Slet annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/backend/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${user.token}`
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          console.error("Uautoriseret adgang ved slet");
+          return;
+        }
+        setEquipment(prev => prev.filter(e => e.id !== id));
+      })
+      .catch(err => console.error("Fetch error: ", err));
   };
 
   const handleEdit = () => {
-    fetch(`https://localhost:7092/api/backend/${editItem.id}`, {
+    if (!user?.token) {
+      console.warn("Ingen JWT token tilgængelig - Rediger annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/backend/${editItem.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${user.token}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(editItem)
     })
-      .then(() => {
+      .then(res => {
+        if (res.status === 401) {
+          console.error("Uautoriseret adgang ved rediger");
+          return;
+        }
         setEditItem(null);
         refreshEquipment();
-      });
+      })
+      .catch(err => console.error("Fetch error: ", err));
   };
 
   const filtered = equipment.filter(e =>
@@ -58,7 +137,7 @@ export default function AdminEquipmentTab() {
   return (
     <div>
       <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem" }}>Udstyr</h2>
-  
+
       <input
         type="text"
         placeholder="Søg udstyr..."
@@ -66,16 +145,46 @@ export default function AdminEquipmentTab() {
         onChange={(e) => setSearchQuery(e.target.value)}
         style={{ padding: "0.5rem", width: "300px", marginBottom: "1rem" }}
       />
-  
+
       <div style={{ marginBottom: "1rem" }}>
-        <input type="text" placeholder="Navn" value={newItem.navn} onChange={(e) => setNewItem({ ...newItem, navn: e.target.value })} style={{ padding: "0.5rem", marginRight: "0.5rem" }} />
-        <input type="number" placeholder="Antal" value={newItem.antal} onChange={(e) => setNewItem({ ...newItem, antal: parseInt(e.target.value) })} style={{ padding: "0.5rem", width: "80px", marginRight: "0.5rem" }} />
-        <input type="text" placeholder="Reol" value={newItem.reol} onChange={(e) => setNewItem({ ...newItem, reol: e.target.value })} style={{ padding: "0.5rem", marginRight: "0.5rem" }} />
-        <input type="text" placeholder="Hylde" value={newItem.hylde} onChange={(e) => setNewItem({ ...newItem, hylde: e.target.value })} style={{ padding: "0.5rem", marginRight: "0.5rem" }} />
-        <input type="text" placeholder="Kasse" value={newItem.kasse} onChange={(e) => setNewItem({ ...newItem, kasse: e.target.value })} style={{ padding: "0.5rem", marginRight: "0.5rem" }} />
+        <input
+          type="text"
+          placeholder="Navn"
+          value={newItem.navn}
+          onChange={(e) => setNewItem({ ...newItem, navn: e.target.value })}
+          style={{ padding: "0.5rem", marginRight: "0.5rem" }}
+        />
+        <input
+          type="number"
+          placeholder="Antal"
+          value={newItem.antal}
+          onChange={(e) => setNewItem({ ...newItem, antal: parseInt(e.target.value) })}
+          style={{ padding: "0.5rem", width: "80px", marginRight: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Reol"
+          value={newItem.reol}
+          onChange={(e) => setNewItem({ ...newItem, reol: e.target.value })}
+          style={{ padding: "0.5rem", marginRight: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Hylde"
+          value={newItem.hylde}
+          onChange={(e) => setNewItem({ ...newItem, hylde: e.target.value })}
+          style={{ padding: "0.5rem", marginRight: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="Kasse"
+          value={newItem.kasse}
+          onChange={(e) => setNewItem({ ...newItem, kasse: e.target.value })}
+          style={{ padding: "0.5rem", marginRight: "0.5rem" }}
+        />
         <button onClick={handleAdd}>Tilføj</button>
       </div>
-  
+
       <table style={{ width: "100%", borderCollapse: "collapse", color: "white" }}>
         <thead>
           <tr style={{ backgroundColor: "#333" }}>

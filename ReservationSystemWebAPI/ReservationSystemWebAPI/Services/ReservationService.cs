@@ -17,9 +17,7 @@ namespace ReservationSystemWebAPI.Services
         {
             var reservations = await _repository.GetAllAsync();
             if (reservations == null || !reservations.Any())
-            {
                 throw new InvalidOperationException("Ingen reservationer fundet.");
-            }
             return reservations;
         }
 
@@ -27,9 +25,7 @@ namespace ReservationSystemWebAPI.Services
         {
             var reservation = await _repository.GetByIdAsync(id);
             if (reservation == null)
-            {
                 throw new KeyNotFoundException($"Reservation med ID {id} blev ikke fundet.");
-            }
             return reservation;
         }
 
@@ -37,54 +33,66 @@ namespace ReservationSystemWebAPI.Services
         {
             var reservations = await _repository.GetByUserEmailAsync(email);
             if (reservations == null || !reservations.Any())
-            {
                 throw new InvalidOperationException("Ingen reservationer fundet for den angivne bruger.");
-            }
             return reservations;
         }
 
-
-        public async Task<Reservation> CreateAsync(ReservationDto dto)
+        public async Task<Reservation> CreateAsync(ReservationCreateDto dto)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || dto.Items == null || !dto.Items.Any())
             {
-                throw new ArgumentException("Ugyldig reservation.");
+                throw new ArgumentException("Ugyldige data for reservation. Sørg for at email og items er angivet korrekt.");
             }
+                
+            // Create reservation entity using DTO
+            var reservation = new Reservation
+            {
+                Email = dto.Email,
+                Status = dto.Status,
+                CreatedAt = DateTime.Now,
+                Items = dto.Items.Select(i => new ReservationItems
+                {
+                    Equipment = i.Equipment,
+                    Quantity = i.Quantity,
+                    IsReturned = false
+                }).ToList(),
+                IsCollected = false
+            };
+
+            // Using repository, create the reservation
             return await _repository.CreateAsync(dto);
         }
 
-        public async Task<bool> ConfirmAsync(int id)
+        public async Task<bool> UpdateAsync(int id, ReservationUpdateDto dto)
         {
-            return await _repository.ConfirmAsync(id);
-        }
-
-        public async Task<bool> MarkAsCollectedAsync(int id)
-        {
-            return await _repository.MarkAsCollectedAsync(id);
+            var updatedCount = await _repository.UpdateAsync(id, dto);
+            if (updatedCount == 0)
+                throw new InvalidOperationException("Opdatering mislykkedes eller reservationen blev ikke fundet.");
+            return true;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            return await _repository.DeleteAsync(id);
+            var affected = await _repository.DeleteAsync(id);
+            if (affected == 0)
+                throw new KeyNotFoundException($"Reservation med ID {id} blev ikke fundet.");
+            return true;
         }
 
         public async Task<bool> ReturnItemsAsync(int reservationId)
         {
-            return await _repository.ReturnItemsAsync(reservationId);
+            var affected = await _repository.ReturnItemsAsync(reservationId);
+            if (affected == 0)
+                throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet eller har ingen items.");
+            return true;
         }
 
         public async Task<bool> CreateHistoryAsync(int reservationId)
         {
-            return await _repository.CreateHistoryAsync(reservationId);
-        }
-
-        public async Task<bool> UpdateStatusAsync(int id, string status)
-        {
-            if (string.IsNullOrWhiteSpace(status))
-            {
-                throw new ArgumentException("Status kan ikke være tom.", nameof(status));
-            }
-            return await _repository.UpdateStatusAsync(id, status);
+            var affected = await _repository.CreateHistoryAsync(reservationId);
+            if (affected == 0)
+                throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet.");
+            return true;
         }
     }
 }

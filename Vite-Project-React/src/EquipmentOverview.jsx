@@ -137,17 +137,25 @@ function EquipmentOverview() {
     }
 
     const reservationData = {
-    email: user.email,
-    items: myReservation.map(item => ({
-      equipment: item.equipment,
-      quantity: item.quantity
-    })),
-    status: "Aktiv"
+      email: user.email,
+      items: myReservation.map(
+        item => {
+          // Filter items by name in reservationItems list
+          const equipmentItem = equipmentList.find(e => e.navn === item.equipment);
+
+          return {
+            equipment: item.equipment,
+            quantity: item.quantity,
+            rowVersion: equipmentItem?.rowVersion
+          };
+        }),
+        status: "Aktiv"
     };
 
     fetch(`${backendUrl}/api/reservation`, {
     method: "POST",
     headers: {
+      "Authorization": `Bearer ${user.token}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(reservationData)
@@ -159,7 +167,7 @@ function EquipmentOverview() {
     .then(() => {
       alert("Reservation oprettet!");
       setIsModified(false);
-      setMyReservation([]); // behold som tom
+      setMyReservation([]); // clear reservation list
       })
     .catch(err => {
       console.error("Fejl ved API-kald:", err);

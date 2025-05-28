@@ -7,18 +7,34 @@ export default function AdminUsersTab() {
   const [editUser, setEditUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const userToken = localStorage.getItem('jwtToken');
+  const backendUrl = "https://localhost:7092";
+
+  const headersWithAuth = {
+    "Authorization": `Bearer ${userToken}`,
+    "Content-Type": "application/json"
+  };
+
   useEffect(() => {
-    fetch("https://localhost:7092/api/user")
-      .then(res => res.json())
+    if (!userToken) {
+      console.warn("Ingen JWT token tilgængelig - Fetch annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/user`, { headers: headersWithAuth })
+      .then(res => {
+        if (res.status === 401) throw new Error("Uautoriseret adgang ved hentning af brugere");
+        return res.json();
+      })
       .then(data => {
         const sorted = [...data].sort((a, b) => a.role === "Admin" ? -1 : 1);
         setUsers(sorted);
       })
       .catch(err => console.error("Fejl ved hentning af brugere:", err));
-  }, []);
+  }, [userToken, backendUrl]);
 
   const refreshUsers = () => {
-    fetch("https://localhost:7092/api/user")
+    fetch(`${backendUrl}/api/user`, { headers: headersWithAuth })
       .then(res => res.json())
       .then(data => {
         const sorted = [...data].sort((a, b) => a.role === "Admin" ? -1 : 1);
@@ -28,44 +44,56 @@ export default function AdminUsersTab() {
 
   const handleAddUser = () => {
     if (!newUser.name) return;
-    fetch("https://localhost:7092/api/user", {
+    fetch(`${backendUrl}/api/user`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headersWithAuth,
       body: JSON.stringify(newUser)
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Fejl ved oprettelse af bruger");
+        return res.json();
+      })
       .then(() => {
         setNewUser({ name: "", role: "Bruger" });
         refreshUsers();
-      });
+      })
+      .catch(err => console.error(err));
   };
 
   const handleDelete = (id, role) => {
-    if (role === "Admin") return; // Forhindrer sletning af admin
+    if (role === "Admin") return; // Prevent deletion of admins
     if (!window.confirm("Er du sikker på at du vil slette brugeren?")) return;
-    fetch(`https://localhost:7092/api/user/${id}`, { method: "DELETE" })
-      .then(() => setUsers(prev => prev.filter(u => u.id !== id)));
+
+    fetch(`${backendUrl}/api/user/${id}`, {
+      method: "DELETE",
+      headers: headersWithAuth
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Fejl ved sletning af bruger");
+        setUsers(prev => prev.filter(u => u.id !== id));
+      })
+      .catch(err => console.error(err));
   };
 
-
   const handleEditClick = (user) => {
-    if (user.role === "Admin") return; // Forhindrer redigering af admin
+    if (user.role === "Admin") return; // Prevent editing admins
     setEditUser({ ...user });
     setEditMode(true);
   };
 
-
   const handleSaveEdit = () => {
-    fetch(`https://localhost:7092/api/user/${editUser.id}`, {
+    fetch(`${backendUrl}/api/user/${editUser.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: headersWithAuth,
       body: JSON.stringify(editUser)
     })
-      .then(() => {
+      .then(res => {
+        if (!res.ok) throw new Error("Fejl ved opdatering af bruger");
         setEditMode(false);
         setEditUser(null);
         refreshUsers();
-      });
+      })
+      .catch(err => console.error(err));
   };
 
   const roleStyle = (role) => ({

@@ -4,15 +4,34 @@ export default function AdminHistoryTab() {
   const [reservations, setReservations] = useState([]);
   const [filter, setFilter] = useState("all");
 
+  const userToken = localStorage.getItem('jwtToken');
+  const backendUrl = "https://localhost:7092";
+
   useEffect(() => {
-    fetch("https://localhost:7092/api/reservation")
-      .then(res => res.json())
+    if (!userToken) {
+      console.warn("Ingen JWT token tilgængelig - Fetch annulleret");
+      return;
+    }
+
+    fetch(`${backendUrl}/api/reservation`, {
+      headers: {
+        "Authorization": `Bearer ${userToken}`,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          throw new Error("Uautoriseret adgang ved reservation-fetch");
+        }
+        if (!res.ok) throw new Error("Fejl ved hentning af reservationer");
+        return res.json();
+      })
       .then(data => {
         const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setReservations(sorted);
       })
       .catch(err => console.error("Fejl ved hentning af reservationer:", err));
-  }, []);
+  }, [userToken, backendUrl]);
 
   const activeReservations = reservations.filter(r => r.status === "Aktiv");
   const completedReservations = reservations.filter(r => r.status !== "Aktiv");

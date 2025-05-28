@@ -10,10 +10,27 @@ export default function AdminDashboard() {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [selectedTab, setSelectedTab] = useState("overview");
 
+  // Retrieve JWT token from localStorage (adjust if your app stores it elsewhere)
+  const userToken = localStorage.getItem('jwtToken');
+  const backendUrl = "https://localhost:7092";
+
   useEffect(() => {
-    // Hent alle reservationer
-    fetch("https://localhost:7092/api/reservation")
+    if (!userToken) {
+      console.warn("Ingen JWT token tilgængelig - Fetch annulleret");
+      return;
+    }
+
+    // Fetch reservations with auth header
+    fetch(`${backendUrl}/api/reservation`, {
+      headers: {
+        "Authorization": `Bearer ${userToken}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then(res => {
+        if (res.status === 401) {
+          throw new Error("Uautoriseret adgang ved reservation-fetch");
+        }
         if (!res.ok) throw new Error("Fejl ved hentning af reservationer");
         return res.json();
       })
@@ -25,9 +42,17 @@ export default function AdminDashboard() {
       })
       .catch(err => console.error("Fejl i reservation-fetch:", err));
 
-    // Hent udstyr og find lav beholdning
-    fetch("https://localhost:7092/api/backend")
+    // Fetch equipment with auth header
+    fetch(`${backendUrl}/api/backend`, {
+      headers: {
+        "Authorization": `Bearer ${userToken}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then(res => {
+        if (res.status === 401) {
+          throw new Error("Uautoriseret adgang ved udstyrs-fetch");
+        }
         if (!res.ok) throw new Error("Fejl ved hentning af udstyr");
         return res.json();
       })
@@ -36,7 +61,7 @@ export default function AdminDashboard() {
         setLowStockItems(lowStock);
       })
       .catch(err => console.error("Fejl i udstyrs-fetch:", err));
-  }, []);
+  }, [userToken, backendUrl]);
 
   const buttonClass = (tab) => ({
     backgroundColor: selectedTab === tab ? "#007bff" : "#333",

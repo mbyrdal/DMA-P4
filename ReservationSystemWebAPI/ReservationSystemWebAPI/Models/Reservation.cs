@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -13,6 +14,9 @@ namespace ReservationSystemWebAPI.Models
         public List<ReservationItems> Items { get; set; } = new();
         public bool IsCollected { get; set; }
         public string? Status { get; set; }
+
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
     }
 
     public class ReservationItems

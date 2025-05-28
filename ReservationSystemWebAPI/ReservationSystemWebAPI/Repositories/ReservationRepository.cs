@@ -32,7 +32,7 @@ namespace ReservationSystemWebAPI.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Reservation> CreateAsync(ReservationDto dto)
+        public async Task<Reservation> CreateAsync(ReservationCreateDto dto)
         {
             var reservation = new Reservation
             {
@@ -47,6 +47,7 @@ namespace ReservationSystemWebAPI.Repositories
                 }).ToList()
             };
 
+            // Decrement inventory for each reserved item
             foreach (var item in reservation.Items)
             {
                 var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
@@ -61,91 +62,140 @@ namespace ReservationSystemWebAPI.Repositories
             return reservation;
         }
 
-        public async Task<bool> ConfirmAsync(int id)
+        public async Task<int> UpdateAsync(int id, ReservationUpdateDto dto)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null || reservation.Status == "Aktiv") return false;
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-            reservation.Status = "Aktiv";
-            await _context.SaveChangesAsync();
-            return true;
+            if (reservation == null)
+            {
+                return 0;
+            }
+
+            // Set original RowVersion for concurrency check on Reservation
+            _context.Entry(reservation).Property("RowVersion").OriginalValue = dto.RowVersion;
+
+            // Update reservation properties
+            if (dto.Status != null)
+            {
+                reservation.Status = dto.Status;
+            }
+
+            if (dto.IsCollected.HasValue)
+            {
+                reservation.IsCollected = dto.IsCollected.Value;
+            }
+
+            // Update reservation items if provided
+            if (dto.Items != null)
+            {
+                foreach (var itemDto in dto.Items)
+                {
+                    var item = reservation.Items.FirstOrDefault(i => i.Id == itemDto.Id);
+                    if (item == null) continue;
+
+                    // Set original RowVersion for concurrency check on the ReservationItem
+                    _context.Entry(item).Property("RowVersion").OriginalValue = itemDto.RowVersion;
+
+                    // Update quantity and other fields
+                    item.Quantity = itemDto.Quantity;
+                }
+            }
+
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Handle concurrency exception - return 0 to indicate concurrency conflict
+                // throw new InvalidOperationException("Der opstod en konflikt ved opdatering af reservationen. Genindlæs venligst siden og prøv igen.");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                // Rethrow unexpected exceptions (or wrap them)
+                throw;
+            }
         }
 
-        public async Task<bool> MarkAsCollectedAsync(int id)
+        public async Task<int> DeleteAsync(int id)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null) return false;
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-            reservation.IsCollected = true;
-            reservation.Status = "Aktiv";
-            await _context.SaveChangesAsync();
-            return true;
-        }
+            if (reservation == null)
+            {
+                return 0; // Reservation not found
+            }
 
-        public async Task<bool> DeleteAsync(int id)
-        {
-            var res = await _context.Reservations.Include(r => r.Items).FirstOrDefaultAsync(r => r.Id == id);
-            if (res == null) return false;
-
-            foreach (var item in res.Items)
+            // Return items to inventory (WEXO DEPOT)
+            foreach (var item in reservation.Items)
             {
                 var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing != null)
-                    existing.Antal += item.Quantity;
+                {
+                    existing.Antal += item.Quantity; // Return the quantity to inventory
+                }
             }
 
-            _context.Reservations.Remove(res);
-            await _context.SaveChangesAsync();
-            return true;
+            _context.Reservations.Remove(reservation);
+            return await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> ReturnItemsAsync(int reservationId)
+        public async Task<int> ReturnItemsAsync(int reservationId)
         {
-            var reservation = await _context.Reservations.Include(r => r.Items).FirstOrDefaultAsync(r => r.Id == reservationId);
-            if (reservation == null || !reservation.Items.Any()) return false;
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == reservationId);
+
+            if (reservation == null || !reservation.Items.Any())
+            {
+                return 0;
+                // throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet.");
+            }
 
             foreach (var item in reservation.Items)
             {
                 if (!item.IsReturned)
                 {
-                    item.IsReturned = true;
+                    item.IsReturned = true; // Mark item as returned
+
                     var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                     if (equipment != null)
-                        equipment.Antal += item.Quantity;
+                    {
+                        equipment.Antal += item.Quantity; // Return the quantity to inventory
+                    }
                 }
             }
 
-            reservation.Status = "Inaktiv";
-            await _context.SaveChangesAsync();
-            return true;
+            reservation.Status = "Inaktiv"; // Set status to inactive
+            return await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> CreateHistoryAsync(int reservationId)
+        public async Task<int> CreateHistoryAsync(int reservationId)
         {
-            var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == reservationId);
-            if (reservation == null) return false;
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == reservationId);
+
+            if (reservation == null)
+            {
+                return 0; // Reservation not found
+            }
 
             var history = new ReservationHistory
             {
                 ReservationId = reservation.Id,
                 Email = reservation.Email,
-                CreatedAt = DateTime.Now,
+                CreatedAt = reservation.CreatedAt,
                 IsCollected = reservation.IsCollected
             };
 
             _context.ReservationHistory.Add(history);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> UpdateStatusAsync(int id, string status)
-        {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null) return false;
-
-            reservation.Status = status;
-            await _context.SaveChangesAsync();
-            return true;
+            return await _context.SaveChangesAsync();
         }
     }
 }

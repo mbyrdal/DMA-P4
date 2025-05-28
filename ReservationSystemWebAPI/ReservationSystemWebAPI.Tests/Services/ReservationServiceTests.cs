@@ -26,12 +26,12 @@ namespace ReservationSystemWebAPI.Tests.Services
         {
             // Verificerer at der returneres en Reservation, når en gyldig DTO leveres
 
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = "test@wexo.dk",
-                Items = new List<ReservationItemDto>
+                Items = new List<ReservationItemCreateDto>
                 {
-                    new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 2 }
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 2 }
                 }
             };
 
@@ -55,7 +55,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         {
             // Forventer ArgumentException ved ugyldig DTO uden email og items
 
-            var invalidDto = new ReservationDto();
+            var invalidDto = new ReservationCreateDto();
 
             await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateAsync(invalidDto));
         }
@@ -65,12 +65,12 @@ namespace ReservationSystemWebAPI.Tests.Services
         {
             // Verificerer at der returneres null, hvis repository returnerer null
 
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = "test@wexo.dk",
-                Items = new List<ReservationItemDto>
+                Items = new List<ReservationItemCreateDto>
                 {
-                    new ReservationItemDto { Equipment = "Kabel", Quantity = 1 }
+                    new ReservationItemCreateDto { Equipment = "Kabel", Quantity = 1 }
                 }
             };
 

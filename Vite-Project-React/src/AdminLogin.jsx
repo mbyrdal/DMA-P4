@@ -5,6 +5,7 @@ import { useUser } from "./UserContext";
 function AdminLogin() {
   const { login } = useUser();
   const navigate = useNavigate();
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +20,7 @@ function AdminLogin() {
     try {
       const audience = window.location.origin;
 
-      const response = await fetch("https://localhost:7092/api/login", {
+      const response = await fetch(`${backendUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, audience }),
@@ -31,12 +32,22 @@ function AdminLogin() {
       }
 
       const user = await response.json();
+
+      // Assuming the token is in user.token
+      if(!user.token) {
+        setError("Ingen token modtaget fra serveren.");
+        return;
+      }
+
       user.role = user.role.toLowerCase();
 
       if (user.role !== "admin") {
         setError("Kun administratorer har adgang til dette område.");
         return;
       }
+
+      // Save JWT token to localStorage
+      localStorage.setItem("jwtToken", user.token);
 
       login(user);
       navigate("/admin-dashboard");

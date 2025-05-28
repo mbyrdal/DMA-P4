@@ -94,7 +94,7 @@ namespace ReservationSystemWebAPI.Controllers
         /// Returnerer 204 NoContent ved succes.
         /// </summary>
         /// <param name="id">ID på genstanden der skal opdateres.</param>
-        /// <param name="updatedItem">De nye data for genstanden.</param>
+        /// <param name="updatedItem">De nye data for genstanden, inkl. RowVersion for concurrency.</param>
         /// <returns>Statuskode afhængigt af resultatet.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItem updatedItem)
@@ -107,16 +107,19 @@ namespace ReservationSystemWebAPI.Controllers
             try
             {
                 await _storageItemService.UpdateItemAsync(updatedItem);
-                return NoContent(); // Status 204 ved succes
+                return NoContent(); // Status 204 if success
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Status 409 if concurrency conflict occurs
+                return Conflict(new
+                {
+                    message = "Opdatering mislykkedes, da en anden bruger har lavet ændringer. Genindlæs data og prøv igen."
+                });
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("Opdatering mislykkedes"))
-            {
-                // Handle optimistic concurrency conflict
-                return Conflict(new { message = ex.Message }); // Status 409 if concurrency conflict occurs
             }
             catch (Exception ex)
             {
