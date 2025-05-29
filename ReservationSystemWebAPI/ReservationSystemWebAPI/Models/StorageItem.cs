@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 
 namespace ReservationSystemWebAPI.Models
@@ -15,6 +16,7 @@ namespace ReservationSystemWebAPI.Models
 
         // OCC approach using RowVersion column
         [Timestamp]
+        [JsonIgnore] // Prevent accidental exposure in responses
         public byte[] RowVersion { get; set; } = null!;
     }
 }

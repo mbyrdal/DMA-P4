@@ -2,6 +2,7 @@
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
+using System.Data;
 
 namespace ReservationSystemWebAPI.Repositories
 {
@@ -73,6 +74,64 @@ namespace ReservationSystemWebAPI.Repositories
                 return 0;
             }
 
+            // Set original RowVersion for concurrency check (modified to proper syntax)
+            _context.Entry(reservation).OriginalValues["RowVersion"] = dto.RowVersion;
+
+            // Update reservation properties
+            if (dto.Status != null)
+            {
+                reservation.Status = dto.Status;
+            }
+
+            if (dto.IsCollected.HasValue)
+            {
+                reservation.IsCollected = dto.IsCollected.Value;
+            }
+
+            // Update reservation items if provided
+            if (dto.Items != null)
+            {
+                foreach (var itemDto in dto.Items)
+                {
+                    var item = reservation.Items.FirstOrDefault(i => i.Id == itemDto.Id);
+                    if (item == null) continue;
+
+                    // Set concurrency token for item
+                    _context.Entry(item).OriginalValues["RowVersion"] = itemDto.RowVersion;
+
+                    // Update quantity and other fields
+                    item.Quantity = itemDto.Quantity;
+                }
+            }
+
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Return -1 to indicate concurrency conflict (instead of 0)
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                // Rethrow unexpected exceptions
+                throw;
+            }
+        }
+
+        /*
+        public async Task<int> UpdateAsync(int id, ReservationUpdateDto dto)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (reservation == null)
+            {
+                return 0;
+            }
+
             // Set original RowVersion for concurrency check on Reservation
             _context.Entry(reservation).Property("RowVersion").OriginalValue = dto.RowVersion;
 
@@ -119,6 +178,7 @@ namespace ReservationSystemWebAPI.Repositories
                 throw;
             }
         }
+        */
 
         public async Task<int> DeleteAsync(int id)
         {
@@ -154,25 +214,41 @@ namespace ReservationSystemWebAPI.Repositories
             if (reservation == null || !reservation.Items.Any())
             {
                 return 0;
-                // throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet.");
             }
+
+            // Add concurrency tracking for items
+            var itemVersions = new Dictionary<int, byte[]>();
 
             foreach (var item in reservation.Items)
             {
                 if (!item.IsReturned)
                 {
+                    // Store current rowVersion before updating
+                    itemVersions[item.Id] = item.RowVersion;
+
                     item.IsReturned = true; // Mark item as returned
 
                     var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                     if (equipment != null)
                     {
+                        // Set item version before saving
+                        _context.Entry(equipment).OriginalValues["RowVersion"] = equipment.RowVersion;
                         equipment.Antal += item.Quantity; // Return the quantity to inventory
                     }
                 }
             }
 
             reservation.Status = "Inaktiv"; // Set status to inactive
-            return await _context.SaveChangesAsync();
+            
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            catch(DbUpdateConcurrencyException)
+            {
+                // Return -1 to indicate concurrency conflict
+                return -1;
+            }
         }
 
         public async Task<int> CreateHistoryAsync(int reservationId)

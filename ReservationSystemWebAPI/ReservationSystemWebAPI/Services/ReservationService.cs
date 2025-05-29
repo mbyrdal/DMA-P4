@@ -1,4 +1,5 @@
-﻿using ReservationSystemWebAPI.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Repositories;
 
@@ -7,6 +8,7 @@ namespace ReservationSystemWebAPI.Services
     public class ReservationService : IReservationService
     {
         private readonly IReservationRepository _repository;
+        public enum UpdateStatus { Success, NoChanges, NotFound, ConcurrencyConflict }
 
         public ReservationService(IReservationRepository repository)
         {
@@ -66,9 +68,20 @@ namespace ReservationSystemWebAPI.Services
         public async Task<bool> UpdateAsync(int id, ReservationUpdateDto dto)
         {
             var updatedCount = await _repository.UpdateAsync(id, dto);
+
+            // Handle return codes
+            if (updatedCount > 0) return true;
+            if (updatedCount == 0) throw new KeyNotFoundException($"Reservation med ID {id} blev ikke fundet!");
+            if (updatedCount < 0) throw new DbUpdateConcurrencyException("Der opstod en konflikt ved opdatering af reservation. Tjek venligst at data er korrekte og prøv igen.");
+
+            throw new InvalidOperationException("Uventet resultat ved opdatering af reservation.");
+
+            /*
+            var updatedCount = await _repository.UpdateAsync(id, dto);
             if (updatedCount == 0)
                 throw new InvalidOperationException("Opdatering mislykkedes eller reservationen blev ikke fundet.");
             return true;
+            */
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -82,9 +95,20 @@ namespace ReservationSystemWebAPI.Services
         public async Task<bool> ReturnItemsAsync(int reservationId)
         {
             var affected = await _repository.ReturnItemsAsync(reservationId);
+
+            // Handle return codes
+            if (affected > 0) return true;
+            if (affected == 0) throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet eller har intet tilknyttet udstyr.");
+            if (affected < 0) throw new DbUpdateConcurrencyException("Der opstod en konflikt ved returnering af items. Tjek venligst at data er korrekte og prøv igen.");
+
+            throw new InvalidOperationException("Uventet resultat ved returnering af items.");
+
+            /*
+            var affected = await _repository.ReturnItemsAsync(reservationId);
             if (affected == 0)
                 throw new KeyNotFoundException($"Reservation med ID {reservationId} blev ikke fundet eller har ingen items.");
             return true;
+            */
         }
 
         public async Task<bool> CreateHistoryAsync(int reservationId)

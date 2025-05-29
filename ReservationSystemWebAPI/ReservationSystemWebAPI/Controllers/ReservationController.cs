@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Services;
@@ -80,6 +81,10 @@ namespace ReservationSystemWebAPI.Controllers
 
                 return NoContent();
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Reservationen er blevet ændret af en anden bruger. Refresh og prøv venligst igen.");
+            }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
@@ -97,9 +102,16 @@ namespace ReservationSystemWebAPI.Controllers
         [HttpPatch("returnItems/{reservationId}")]
         public async Task<IActionResult> ReturnItems(int reservationId)
         {
-            var success = await _reservationService.ReturnItemsAsync(reservationId);
-            if (!success) return NotFound("Fejl ved returnering");
-            return NoContent();
+            try
+            {
+                var success = await _reservationService.ReturnItemsAsync(reservationId);
+                if (!success) return NotFound("Fejl ved returnering");
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Reservationen er blevet markeret som afleveret af en anden bruger.");
+            }
         }
 
         [HttpPost("createHistory/{reservationId}")]

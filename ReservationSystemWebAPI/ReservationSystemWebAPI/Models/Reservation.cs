@@ -16,6 +16,7 @@ namespace ReservationSystemWebAPI.Models
         public string? Status { get; set; }
 
         [Timestamp]
+        [JsonIgnore] // Prevent accidental exposure in responses
         public byte[]? RowVersion { get; set; }
     }
 
@@ -27,8 +28,13 @@ namespace ReservationSystemWebAPI.Models
         public int ReservationId { get; set; }
         public bool IsReturned { get; set; } = false;
 
+        // Add RowVersion for OCC
+        [Timestamp]
+        [JsonIgnore]
+        public byte[] RowVersion { get; set; } = null!;
 
-        [JsonIgnore] // Ignoreres ved serialization
+
+        [JsonIgnore] // Prevent accidental exposure in responses
         [ForeignKey("ReservationId")]
         public Reservation? Reservation { get; set; }
     }

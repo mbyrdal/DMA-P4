@@ -1,4 +1,6 @@
-﻿namespace ReservationSystemWebAPI.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ReservationSystemWebAPI.DTOs;
 
 /// <summary>
 /// DTO used when creating a new reservation.
@@ -41,6 +43,7 @@ public class ReservationUpdateDto
     /// <summary>
     /// Used for optimistic concurrency control (OCC).
     /// </summary>
+    [Required]
     public byte[]? RowVersion { get; set; } = Array.Empty<byte>();
 }
 
@@ -68,6 +71,7 @@ public class ReservationItemUpdateDto
     /// <summary>
     /// Used for optimistic concurrency control (OCC).
     /// </summary>
+    [Required]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }
 
@@ -83,6 +87,9 @@ public class ReservationReadDto
     public List<ReservationItemReadDto> Items { get; set; } = new();
     public bool IsCollected { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    // Add for OCC
+    public byte[]? RowVersion { get; set; } = Array.Empty<byte>();
 }
 
 public class ReservationItemReadDto
@@ -90,4 +97,7 @@ public class ReservationItemReadDto
     public string Equipment { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public bool IsReturned { get; set; }
+
+    // Add for OCC
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }
