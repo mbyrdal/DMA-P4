@@ -21,6 +21,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AuthenticateUserAsync_ValidCredentials_ReturnsUser()
         {
+            // Arrange
             var email = "test@example.com";
             var password = "1234";
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
@@ -34,8 +35,10 @@ namespace ReservationSystemWebAPI.Tests.Services
 
             _mockRepo.Setup(r => r.GetUserByEmailAsync(email)).ReturnsAsync(user);
 
+            // Act
             var result = await _service.AuthenticateUserAsync(email, password);
 
+            // Assert
             Assert.NotNull(result);
             Assert.Equal(email, result.Email);
         }
@@ -43,17 +46,20 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task AuthenticateUserAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
+            // Arrange
             var email = "ukendt@example.com";
             var password = "any";
 
             _mockRepo.Setup(r => r.GetUserByEmailAsync(email)).ReturnsAsync((User)null);
 
+            // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AuthenticateUserAsync(email, password));
         }
 
         [Fact]
         public async Task AuthenticateUserAsync_WrongPassword_ThrowsUnauthorizedAccessException()
         {
+            // Arrange
             var email = "test@example.com";
             var correctPassword = "correct";
             var wrongPassword = "wrong";
@@ -67,6 +73,7 @@ namespace ReservationSystemWebAPI.Tests.Services
 
             _mockRepo.Setup(r => r.GetUserByEmailAsync(email)).ReturnsAsync(user);
 
+            // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.AuthenticateUserAsync(email, wrongPassword));
         }
     }

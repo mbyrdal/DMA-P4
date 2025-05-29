@@ -35,73 +35,56 @@ namespace ReservationSystemWebAPI.Tests.Integration
         [Fact]
         public async Task CreateAsync_ValidDto_CreatesReservation()
         {
-            // Arrange
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_res_{Guid.NewGuid()}@wexo.dk",
                 Status = "Afventer",
-                Items = new List<ReservationItemDto>
+                Items = new List<ReservationItemCreateDto>
                 {
-                    new ReservationItemDto
-                    {
-                        Equipment = "HDMI-kabel",
-                        Quantity = 1
-                    }
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
                 }
             };
 
-            // Act
             var reservation = await _reservationService.CreateAsync(dto);
 
-            // Assert
             Assert.NotNull(reservation);
             Assert.Equal(dto.Email, reservation.Email);
 
-            // Cleanup
             await _reservationService.DeleteAsync(reservation.Id);
         }
 
         [Fact]
         public async Task GetAllAsync_ReturnsReservations()
         {
-            // Arrange
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_all_{Guid.NewGuid()}@wexo.dk",
                 Status = "Afventer",
-                Items = new List<ReservationItemDto>
+                Items = new List<ReservationItemCreateDto>
                 {
-                    new ReservationItemDto
-                    {
-                        Equipment = "HDMI-kabel",
-                        Quantity = 1
-                    }
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
                 }
             };
 
             var created = await _reservationService.CreateAsync(dto);
-
-            // Act
             var all = await _reservationService.GetAllAsync();
 
-            // Assert
             Assert.Contains(all, r => r.Id == created.Id);
 
-            // Cleanup
             await _reservationService.DeleteAsync(created.Id);
         }
 
         [Fact]
         public async Task GetByIdAsync_ValidId_ReturnsCorrectReservation()
         {
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_getbyid_{Guid.NewGuid()}@wexo.dk",
                 Status = "Reserveret",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
+                Items = new List<ReservationItemCreateDto>
+                {
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
+                }
             };
 
             var created = await _reservationService.CreateAsync(dto);
@@ -118,14 +101,14 @@ namespace ReservationSystemWebAPI.Tests.Integration
         {
             string email = $"integration_userres_{Guid.NewGuid()}@wexo.dk";
 
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = email,
                 Status = "Reserveret",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
+                Items = new List<ReservationItemCreateDto>
+                {
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
+                }
             };
 
             var created = await _reservationService.CreateAsync(dto);
@@ -137,22 +120,28 @@ namespace ReservationSystemWebAPI.Tests.Integration
         }
 
         [Fact]
-        public async Task UpdateStatusAsync_ValidInput_UpdatesStatus()
+        public async Task UpdateAsync_ValidInput_UpdatesStatus()
         {
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_status_{Guid.NewGuid()}@wexo.dk",
                 Status = "Reserveret",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
+                Items = new List<ReservationItemCreateDto>
+                {
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
+                }
             };
 
             var created = await _reservationService.CreateAsync(dto);
+            var original = await _reservationService.GetByIdAsync(created.Id);
 
-            bool updated = await _reservationService.UpdateStatusAsync(created.Id, "Afhentet");
+            var updateDto = new ReservationUpdateDto
+            {
+                Status = "Afhentet",
+                RowVersion = original.RowVersion
+            };
 
+            var updated = await _reservationService.UpdateAsync(created.Id, updateDto);
             var updatedRes = await _reservationService.GetByIdAsync(created.Id);
 
             Assert.True(updated);
@@ -162,46 +151,20 @@ namespace ReservationSystemWebAPI.Tests.Integration
         }
 
         [Fact]
-        public async Task MarkAsCollectedAsync_ValidId_MarksAsCollected()
-        {
-            var dto = new ReservationDto
-            {
-                Email = $"integration_collected_{Guid.NewGuid()}@wexo.dk",
-                Status = "Reserveret",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
-            };
-
-            var created = await _reservationService.CreateAsync(dto);
-            bool result = await _reservationService.MarkAsCollectedAsync(created.Id);
-
-            var updated = await _reservationService.GetByIdAsync(created.Id);
-
-            Assert.True(result);
-            Assert.True(updated.IsCollected);
-            Assert.Equal("Aktiv", updated.Status);
-
-            await _reservationService.DeleteAsync(created.Id);
-        }
-
-        [Fact]
         public async Task ReturnItemsAsync_ValidReservation_ReturnsAllItems()
         {
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_return_{Guid.NewGuid()}@wexo.dk",
                 Status = "Aktiv",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
+                Items = new List<ReservationItemCreateDto>
+                {
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
+                }
             };
 
             var created = await _reservationService.CreateAsync(dto);
-
-            bool result = await _reservationService.ReturnItemsAsync(created.Id);
+            var result = await _reservationService.ReturnItemsAsync(created.Id);
             var fetched = await _reservationService.GetByIdAsync(created.Id);
 
             Assert.True(result);
@@ -214,14 +177,14 @@ namespace ReservationSystemWebAPI.Tests.Integration
         [Fact]
         public async Task DeleteAsync_ValidId_DeletesReservation()
         {
-            var dto = new ReservationDto
+            var dto = new ReservationCreateDto
             {
                 Email = $"integration_delete_{Guid.NewGuid()}@wexo.dk",
                 Status = "Reserveret",
-                Items = new List<ReservationItemDto>
-        {
-            new ReservationItemDto { Equipment = "HDMI-kabel", Quantity = 1 }
-        }
+                Items = new List<ReservationItemCreateDto>
+                {
+                    new ReservationItemCreateDto { Equipment = "HDMI-kabel", Quantity = 1 }
+                }
             };
 
             var created = await _reservationService.CreateAsync(dto);
@@ -230,6 +193,5 @@ namespace ReservationSystemWebAPI.Tests.Integration
             Assert.True(deleted);
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _reservationService.GetByIdAsync(created.Id));
         }
-
     }
 }
