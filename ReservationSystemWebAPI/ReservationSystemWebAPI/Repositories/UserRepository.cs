@@ -41,7 +41,12 @@ namespace ReservationSystemWebAPI.Repositories
         public async Task<int> AddAsync(User user)
         {
             await _dbContext.Users.AddAsync(user);
-            return await _dbContext.SaveChangesAsync();
+            int rows = await _dbContext.SaveChangesAsync();
+
+            if (rows == 0)
+                throw new InvalidOperationException("No changes were saved");
+
+            return user.Id;
         }
 
         /// <summary>
@@ -68,13 +73,17 @@ namespace ReservationSystemWebAPI.Repositories
         public async Task<int> DeleteAsync(int id)
         {
             User existingUser = await _dbContext.Users.FindAsync(id);
-            if(existingUser != null)
-            {
-                _dbContext.Users.Remove(existingUser);
-                return await _dbContext.SaveChangesAsync();
-            }
-            // If user not found, return 0 indicating no rows affected
-            return 0;
+
+            if (existingUser == null)
+                return 0;
+
+            _dbContext.Users.Remove(existingUser);
+            int rows = await _dbContext.SaveChangesAsync();
+
+            if (rows == 0)
+                throw new InvalidOperationException("No user was deleted from the database.");
+
+            return id;
         }
 
         /// <summary>
