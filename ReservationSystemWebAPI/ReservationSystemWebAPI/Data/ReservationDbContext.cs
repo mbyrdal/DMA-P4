@@ -25,6 +25,10 @@ namespace ReservationSystemWebAPI.DataAccess
                 .WithOne(i => i.Reservation)
                 .HasForeignKey(i => i.ReservationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ReservationItems>()
+                .Property(i => i.RowVersion)
+                .IsRowVersion(); // Configure RowVersion for optimistic concurrency control
         }
 
     }
