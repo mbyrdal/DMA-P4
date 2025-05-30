@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Repositories;
 using ReservationSystemWebAPI.Services;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace ReservationSystemWebAPI.Tests.Integration
@@ -25,6 +27,37 @@ namespace ReservationSystemWebAPI.Tests.Integration
             _loginService = provider.GetRequiredService<ILoginService>();
         }
 
-        // TODO: Tilføj integrationstests her
+        [Fact]
+        public async Task AuthenticateUserAsync_ValidCredentials_ReturnsUser()
+        {
+            // Husk: Brugeren skal findes i databasen
+            var email = "tommy@wexo.dk";
+            var password = "admin1234";
+
+            var user = await _loginService.AuthenticateUserAsync(email, password);
+
+            Assert.NotNull(user);
+            Assert.Equal(email, user.Email);
+        }
+
+        [Fact]
+        public async Task AuthenticateUserAsync_InvalidPassword_ThrowsUnauthorizedAccessException()
+        {
+            var email = "tommy@wexo.dk";
+            var wrongPassword = "forkertKode";
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _loginService.AuthenticateUserAsync(email, wrongPassword));
+        }
+
+        [Fact]
+        public async Task AuthenticateUserAsync_UnknownEmail_ThrowsKeyNotFoundException()
+        {
+            var unknownEmail = $"unknown_{Guid.NewGuid()}@example.com";
+            var password = "hvadSomHelst";
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                _loginService.AuthenticateUserAsync(unknownEmail, password));
+        }
     }
 }
