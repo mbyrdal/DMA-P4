@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.Models;
+using ReservationSystemWebAPI.Repositories;
 
 namespace ReservationSystemWebAPI.Services
 {
@@ -57,6 +58,12 @@ namespace ReservationSystemWebAPI.Services
         /// <param name="storageItem">Udstyr (StorageItem) objekt, som skal tilføjes.</param>
         public async Task AddItemAsync(StorageItem storageItem)
         {
+
+            if(storageItem == null)
+            {
+                throw new ArgumentNullException(nameof(storageItem), "Udstyret er NULL/findes ikke. Tjek venligst input data.");
+            }
+
             if (string.IsNullOrWhiteSpace(storageItem.Navn))
             {
                 throw new ArgumentException("Navnet på udstyret er påkrævet. ", nameof(storageItem.Navn));
@@ -91,7 +98,7 @@ namespace ReservationSystemWebAPI.Services
                 await _storageItemAccessPoint.UpdateAsync(storageItem);
             }
 
-            // Here's what the RowVersion used to be — if the current database version doesn’t match, throw a DbUpdateConcurrencyException.
+            // The RowVersion concurrency token is checked; if it doesn't match the DB, a DbUpdateConcurrencyException is thrown.
             catch (DbUpdateConcurrencyException)
             {
                 // Handle concurrency conflict
@@ -119,7 +126,12 @@ namespace ReservationSystemWebAPI.Services
 
             try
             {
-                await _storageItemAccessPoint.RemoveAsync(id);
+                var affectedRows = await _storageItemAccessPoint.DeleteAsync(id);
+                if (affectedRows == 0)
+                {
+                    throw new InvalidOperationException($"Ingen udstyr blev slettet med ID {id}. " +
+                                                        "Tjek venligst forbindelsen til databasen og prøv igen.");
+                }
             }
             catch (Exception ex)
             {

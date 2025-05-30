@@ -23,7 +23,27 @@ namespace ReservationSystemWebAPI.Controllers
         public async Task<ActionResult<IEnumerable<Reservation>>> GetAll()
         {
             var reservations = await _reservationService.GetAllAsync();
-            return Ok(reservations);
+
+            // Manual mapping to DTOs
+            var dtos = reservations.Select(r => new ReservationReadDto
+            {
+                Id = r.Id,
+                Email = r.Email,
+                CreatedAt = r.CreatedAt,
+                IsCollected = r.IsCollected,
+                Status = r.Status,
+                RowVersion = Convert.ToBase64String(r.RowVersion),
+                Items = r.Items.Select(i => new ReservationItemReadDto
+                {
+                    Id = i.Id,
+                    Equipment = i.Equipment,
+                    Quantity = i.Quantity,
+                    IsReturned = i.IsReturned,
+                    RowVersion = Convert.ToBase64String(i.RowVersion)
+                }).ToList()
+            }).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpGet("{id}")]
@@ -35,10 +55,30 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
         [HttpGet("user/{email}")]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetByUser(string email)
+        public async Task<ActionResult<IEnumerable<ReservationReadDto>>> GetByUser(string email)
         {
             var reservations = await _reservationService.GetByUserEmailAsync(email);
-            return Ok(reservations);
+
+            // Map to DTOs
+            var dtos = reservations.Select(r => new ReservationReadDto
+            {
+                Id = r.Id,
+                Email = r.Email,
+                CreatedAt = r.CreatedAt,
+                IsCollected = r.IsCollected,
+                Status = r.Status,
+                RowVersion = Convert.ToBase64String(r.RowVersion), // Convert byte[] → Base64
+                Items = r.Items.Select(i => new ReservationItemReadDto
+                {
+                    Id = i.Id,
+                    Equipment = i.Equipment,
+                    Quantity = i.Quantity,
+                    IsReturned = i.IsReturned,
+                    RowVersion = Convert.ToBase64String(i.RowVersion) // Convert byte[] → Base64
+                }).ToList()
+            }).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpPost]
@@ -73,13 +113,17 @@ namespace ReservationSystemWebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] ReservationUpdateDto dto)
         {
+
+            // Auto-validate required fields (Items + RowVersion)
+            if(!ModelState.IsValid)
+            {
+                return BadRequest($"Invalid reservation update data: {ModelState}"); // Returns 400 if Items are missing
+            }
+
             try
             {
                 var success = await _reservationService.UpdateAsync(id, dto);
-                if (!success)
-                    return NotFound();
-
-                return NoContent();
+                return success ? NoContent() : NotFound();
             }
             catch (DbUpdateConcurrencyException)
             {

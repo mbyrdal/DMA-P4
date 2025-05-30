@@ -1,4 +1,5 @@
-﻿using ReservationSystemWebAPI.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Repositories;
 
 namespace ReservationSystemWebAPI.Services
@@ -97,18 +98,30 @@ namespace ReservationSystemWebAPI.Services
         /// <summary>
         /// Deletes a user from the system by ID asynchronously.
         /// </summary>
-        public async Task<int> DeleteAsync(int id)
+        public async Task<int> DeleteAsync(int id, string rowVersion)
         {
             bool userExists = await _userRepository.ExistsAsync(id);
-
-            if(!userExists)
-            {
+            if (!userExists)
                 throw new KeyNotFoundException($"Kan ikke slette. Bruger med ID {id} findes ikke.");
+
+            // Convert base64 string to byte[]
+            byte[] rowVersionBytes;
+            try
+            {
+                rowVersionBytes = Convert.FromBase64String(rowVersion);
+            }
+            catch (FormatException)
+            {
+                throw new ArgumentException("Ugyldig RowVersion format.");
             }
 
             try
             {
-                return await _userRepository.DeleteAsync(id);
+                return await _userRepository.DeleteAsync(id, rowVersionBytes);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new InvalidOperationException("Brugeren er blevet ændret eller slettet af en anden proces.");
             }
             catch (Exception ex)
             {

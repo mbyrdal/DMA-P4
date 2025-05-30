@@ -138,7 +138,7 @@ namespace ReservationSystemWebAPI.Tests.Integration
             var updateDto = new ReservationUpdateDto
             {
                 Status = "Afhentet",
-                RowVersion = original.RowVersion
+                RowVersion = Convert.ToBase64String(original.RowVersion ?? Array.Empty<byte>())
             };
 
             var updated = await _reservationService.UpdateAsync(created.Id, updateDto);

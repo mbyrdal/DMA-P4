@@ -60,13 +60,16 @@ export default function AdminUsersTab() {
       .catch(err => console.error(err));
   };
 
-  const handleDelete = (id, role) => {
-    if (role === "Admin") return; // Prevent deletion of admins
+  const handleDelete = (id, role, rowVersion) => {
+    if (role === "Admin") return;
     if (!window.confirm("Er du sikker på at du vil slette brugeren?")) return;
 
     fetch(`${backendUrl}/api/user/${id}`, {
       method: "DELETE",
-      headers: headersWithAuth
+      headers: {
+        ...headersWithAuth, // ✅ Use spread instead of nesting
+        "RowVersion": rowVersion // ✅ Send RowVersion header
+      }
     })
       .then(res => {
         if (!res.ok) throw new Error("Fejl ved sletning af bruger");
@@ -76,8 +79,8 @@ export default function AdminUsersTab() {
   };
 
   const handleEditClick = (user) => {
-    if (user.role === "Admin") return; // Prevent editing admins
-    setEditUser({ ...user });
+    if (user.role === "Admin") return;
+    setEditUser({ ...user }); // ✅ Preserve rowVersion for concurrency
     setEditMode(true);
   };
 
@@ -85,15 +88,24 @@ export default function AdminUsersTab() {
     fetch(`${backendUrl}/api/user/${editUser.id}`, {
       method: "PUT",
       headers: headersWithAuth,
-      body: JSON.stringify(editUser)
+      body: JSON.stringify(editUser) // ✅ Includes rowVersion in body
     })
       .then(res => {
+        if (res.status === 409) {
+          throw new Error("Conflict");
+        }
         if (!res.ok) throw new Error("Fejl ved opdatering af bruger");
         setEditMode(false);
         setEditUser(null);
         refreshUsers();
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        if (err.message === "Conflict") {
+          alert("Brugeren er blevet ændret af en anden. Genindlæs venligst og prøv igen.");
+        } else {
+          console.error(err);
+        }
+      });
   };
 
   const roleStyle = (role) => ({
@@ -180,7 +192,7 @@ export default function AdminUsersTab() {
                 )
               )}
               <button
-                onClick={() => handleDelete(user.id, user.role)}
+                onClick={() => handleDelete(user.id, user.role, user.rowVersion)}
                 disabled={user.role === "Admin"}
                 style={{
                   backgroundColor: "#D9534F",
@@ -194,7 +206,6 @@ export default function AdminUsersTab() {
               >
                 Slet
               </button>
-
             </div>
           </li>
         ))}

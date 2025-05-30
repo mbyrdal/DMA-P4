@@ -11,17 +11,17 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Get Connection String from appsettings.json
+// Retrieve the connection string for the database from appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Bind JwT settings
+// Bind JWT configuration settings from appsettings.json to JwtSettings object
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
-
-// Add JwT Authentication
+// Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
+    // Set default authentication and challenge scheme to JWT Bearer
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -35,22 +35,26 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
-        // ValidAudience = jwtSettings.Audience, --> WE MUST COMMENT THIS OUT TO AVOID AUDIENCE VALIDATION, SINCE WE ARE RUNNING THE FRONTEND (AUDIENCE) USING MULTIPLE PORTS IN DEVELOPMENT
+        // Audience validation is disabled for development because frontend runs on multiple localhost ports
+        // ValidAudience = jwtSettings.Audience,
+
         IssuerSigningKey = new SymmetricSecurityKey(key),
 
+        // Custom audience validation to allow multiple localhost ports during development
         AudienceValidator = (audiences, securityToken, validationParameters) =>
         {
-            // Accept token if any audience claim starts with "https://localhost"
-            // Allows for multiple port usage, ie. localhost:5173, localhost:5174, etc.
+            // Accept token if any audience claim starts with "https://localhost" or "http://localhost"
             return audiences.Any(aud => aud.StartsWith("https://localhost") || aud.StartsWith("http://localhost"));
         }
-
     };
 });
 
+// Add Authorization services to the container
 builder.Services.AddAuthorization();
 
-// Explain CORS policy
+// Configure CORS policy to allow all origins, methods, and headers (for development/testing)
+// This is needed to enable the frontend application, which may be hosted on a different origin (domain or port),
+// to successfully make cross-origin HTTP requests to this API without being blocked by the browser’s same-origin policy.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin()
@@ -58,11 +62,12 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader());
 });
 
-// Registrer DbContext med SQL Server (for DAL)
+
+// Register Entity Framework Core DbContext with SQL Server provider using the connection string
 builder.Services.AddDbContext<ReservationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Registrer repositories og services
+// Register repositories and services for dependency injection
 builder.Services.AddScoped<IStorageItemRepository, StorageItemRepository>();
 builder.Services.AddScoped<IStorageItemService, StorageItemService>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
@@ -72,12 +77,13 @@ builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-
+// Add MVC Controllers support
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Register Swagger/OpenAPI generator for API documentation
 builder.Services.AddEndpointsApiExplorer();
 
-// Add JWT authentication to Swagger UI
+// Configure Swagger to use JWT Authentication in the UI
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -108,21 +114,21 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
-
-// Configure the HTTP request pipeline.
+// Configure middleware pipeline for development environment
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger();       // Enable Swagger middleware
+    app.UseSwaggerUI();     // Enable Swagger UI
 }
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection();   // Redirect HTTP requests to HTTPS
 
-app.UseAuthentication();
+app.UseCors("AllowAll");     // Apply CORS policy to allow all origins, methods, and headers
 
-app.UseAuthorization();
+app.UseAuthentication();     // Enable authentication middleware
 
-app.MapControllers();
+app.UseAuthorization();      // Enable authorization middleware
 
-app.Run();
+app.MapControllers();        // Map controller endpoints
+
+app.Run();                   // Run the web application

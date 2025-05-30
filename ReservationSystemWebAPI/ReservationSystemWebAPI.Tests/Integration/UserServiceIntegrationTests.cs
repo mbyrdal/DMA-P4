@@ -48,8 +48,8 @@ namespace ReservationSystemWebAPI.Tests.Integration
             Assert.NotNull(result);
             Assert.Equal(user.Email, result.Email);
 
-            // Cleanup
-            await _userService.DeleteAsync(userId);
+            // Cleanup: Delete requires rowVersion now
+            await _userService.DeleteAsync(userId, result.RowVersionAsString());
         }
 
         [Fact]
@@ -70,13 +70,13 @@ namespace ReservationSystemWebAPI.Tests.Integration
             Assert.Equal(id, result.Id);
 
             // Cleanup
-            await _userService.DeleteAsync(id);
+            await _userService.DeleteAsync(id, result.RowVersionAsString());
         }
 
         [Fact]
         public async Task UpdateAsync_ExistingUser_UpdatesCorrectly()
         {
-            // Arrange – opret bruger
+            // Arrange – create user
             var user = new User
             {
                 Name = "Integration Update",
@@ -87,22 +87,22 @@ namespace ReservationSystemWebAPI.Tests.Integration
 
             int id = await _userService.AddAsync(user);
 
-            // Hent den eksisterende bruger EF allerede tracker
+            // Retrieve existing user with concurrency token
             var existing = await _userService.GetByIdAsync(id);
 
-            // Modificér direkte
+            // Modify properties
             existing.Role = "Admin";
             existing.Password = "updated1234";
 
-            // Act – opdater
+            // Act – update (pass the concurrency token)
             int updatedId = await _userService.UpdateAsync(existing);
 
             // Assert
             var result = await _userService.GetByIdAsync(id);
             Assert.Equal("Admin", result.Role);
 
-            // Cleanup
-            await _userService.DeleteAsync(id);
+            // Cleanup - delete with concurrency token
+            await _userService.DeleteAsync(id, result.RowVersionAsString());
         }
 
         [Fact]
@@ -118,7 +118,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
 
             int id = await _userService.AddAsync(user);
 
-            int deletedId = await _userService.DeleteAsync(id);
+            var userFromDb = await _userService.GetByIdAsync(id);
+
+            int deletedId = await _userService.DeleteAsync(id, userFromDb.RowVersionAsString());
             Assert.Equal(id, deletedId);
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _userService.GetByIdAsync(id));
@@ -140,7 +142,18 @@ namespace ReservationSystemWebAPI.Tests.Integration
             var users = await _userService.GetAllAsync();
             Assert.Contains(users, u => u.Id == id);
 
-            await _userService.DeleteAsync(id);
+            // Get the user with concurrency token for delete
+            var userFromDb = await _userService.GetByIdAsync(id);
+            await _userService.DeleteAsync(id, userFromDb.RowVersionAsString());
+        }
+    }
+
+    // Extension method to get Base64 string of concurrency token
+    public static class UserExtensions
+    {
+        public static string RowVersionAsString(this User user)
+        {
+            return Convert.ToBase64String(user.RowVersion ?? Array.Empty<byte>());
         }
     }
 }

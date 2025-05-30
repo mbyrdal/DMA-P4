@@ -25,6 +25,7 @@ function LoanHistory() {
         return res.json();
       })
       .then(data => {
+        console.log("Fetched reservations with RowVersion:", data);
         // Ensure the rowVersion field is present in data if your backend sends it
         const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setReservations(sorted);
@@ -88,7 +89,16 @@ function LoanHistory() {
       });
   };
 
-  // UPDATED handleMarkCollected to PATCH/PUT with rowVersion and isCollected
+  // Byte to base64string helper function
+  const base64ToByteArray = (base64string) => {
+    const binString = atob(base64string);
+    const bytes = new Uint8Array(binString.length);
+    for(let i = 0; i < binString.length; i++) {
+      bytes[i] = binString.charCodeAt(i);
+    }
+    return Array.from(bytes);
+  };
+
   const handleMarkCollected = (reservationId) => {
     const reservation = reservations.find(r => r.id === reservationId);
     if (!reservation) {
@@ -96,13 +106,26 @@ function LoanHistory() {
       return;
     }
 
-    const payload = {
-      isCollected: true,
-      rowVersion: reservation.rowVersion // Ensure this field is included in fetched data
-    };
+  // ✅ Correct payload structure with RowVersion
+  const payload = {
+    id: reservation.id,
+    email: reservation.email,
+    status: reservation.status,
+    isCollected: true,
+    rowVersion: reservation.rowVersion, // Must come from API response
+    items: reservation.items.map(item => ({
+      id: item.id,
+      equipment: item.equipment,
+      quantity: item.quantity,
+      isReturned: item.isReturned,
+      rowVersion: item.rowVersion // Must come from API response
+    }))
+  };
+
+    console.log("PUT payload:", payload); // Logging purposes
 
     fetch(`https://localhost:7092/api/reservation/${reservationId}`, {
-      method: "PUT", // or "PATCH" if your API supports partial update
+      method: "PUT",
       headers: {
         "Authorization": `Bearer ${user.token}`,
         "Content-Type": "application/json"
@@ -110,6 +133,10 @@ function LoanHistory() {
       body: JSON.stringify(payload)
     })
       .then((res) => {
+
+        if(res.status === 409) {
+          throw new Error("Reservationen er blevet ændret af en anden. Opdater siden og prøv igen.")
+        }
         if (!res.ok) throw new Error("Kunne ikke markere som afhentet");
         fetchReservations();
         alert("Reservation markeret som afhentet.");

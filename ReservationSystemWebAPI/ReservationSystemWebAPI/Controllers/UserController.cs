@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
+using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Services;
 
@@ -22,11 +23,6 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Retrieves a list of all users in the system.
         /// </summary>
-        /// <returns>
-        /// 200 OK with a list of users if successful, 
-        /// or 500 Internal Server Error if an unexpected error occurs.
-        /// </returns>
-        // GET: api/User
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
         {
@@ -44,12 +40,6 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Retrieves a single user by their unique ID.
         /// </summary>
-        /// <param name="id">The unique ID of the user.</param>
-        /// <returns>
-        /// 200 OK with the user data if found, 
-        /// 404 Not Found if no user exists with the given ID,
-        /// or 500 Internal Server Error for unexpected errors.
-        // GET: api/User/5
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
@@ -71,13 +61,6 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Creates a new user in the system.
         /// </summary>
-        /// <param name="user">The user data to create.</param>
-        /// <returns>
-        /// 201 Created with the created user and location header, 
-        /// 400 Bad Request if validation fails,
-        /// or 500 Internal Server Error if something goes wrong.
-        /// </returns>
-        // POST: api/User
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
@@ -97,33 +80,50 @@ namespace ReservationSystemWebAPI.Controllers
         }
 
         /// <summary>
-        /// Updates an existing user based on their ID.
+        /// Updates an existing user based on their ID, with optimistic concurrency control.
         /// </summary>
-        /// <param name="id">The ID of the user to update.</param>
-        /// <param name="updatedUser">The updated user data.</param>
-        /// <returns>
-        /// 204 No Content if the update is successful, 
-        /// 400 Bad Request if the ID does not match the user data,
-        /// 404 Not Found if the user does not exist,
-        /// or 500 Internal Server Error if an error occurs.
-        /// </returns>
-        // PUT: api/User/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User updatedUser)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto dto)
         {
-            if (id != updatedUser.Id)
+            if (id != dto.Id)
             {
-                return BadRequest("Bruger-ID stemmer ikke overens.");
+                return BadRequest("Bruger-ID stemmer ikke overens med den opdaterede bruger-ID.");
+            }
+
+            byte[] rowVersion;
+            try
+            {
+                rowVersion = Convert.FromBase64String(dto.RowVersion);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("Ugyldig RowVersion format. Skal være en Base64-kodet streng.");
             }
 
             try
             {
-                await _userService.UpdateAsync(updatedUser);
+                var user = new User
+                {
+                    Id = dto.Id,
+                    Name = dto.Name,
+                    Role = dto.Role,
+                    RowVersion = rowVersion
+                };
+
+                await _userService.UpdateAsync(user);
                 return NoContent();
             }
             catch (KeyNotFoundException)
             {
                 return NotFound($"Bruger med ID {id} findes ikke.");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Brugeren er blevet ændret eller slettet af en anden.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict("Konflikt under opdatering: " + ex.Message);
             }
             catch (Exception ex)
             {
@@ -131,29 +131,31 @@ namespace ReservationSystemWebAPI.Controllers
             }
         }
 
+
         /// <summary>
         /// Deletes an existing user by their ID.
         /// </summary>
-        /// <param name="id">The ID of the user to delete.</param>
-        /// <returns>
-        /// 204 No Content if the deletion is successful,
-        /// 404 Not Found if the user does not exist,
-        /// or 500 Internal Server Error if an error occurs.
-        /// </returns>
-        // DELETE: api/User/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(int id, [FromBody] UserDeleteDto dto)
         {
             try
             {
-                await _userService.DeleteAsync(id);
+                await _userService.DeleteAsync(id, dto.RowVersion);
                 return NoContent();
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException)
             {
                 return NotFound($"Bruger med ID {id} findes ikke.");
             }
-            catch(Exception ex)
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
             {
                 return StatusCode(500, $"Fejl under sletning af bruger: {ex.Message}");
             }

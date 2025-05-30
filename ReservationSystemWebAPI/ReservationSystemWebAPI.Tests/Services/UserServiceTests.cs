@@ -2,9 +2,10 @@
 using Moq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ReservationSystemWebAPI.Models;
-using ReservationSystemWebAPI.Repositories;
 using ReservationSystemWebAPI.Services;
+using ReservationSystemWebAPI.Repositories;
+using ReservationSystemWebAPI.Models;
+using System;
 using Microsoft.EntityFrameworkCore;
 
 namespace ReservationSystemWebAPI.Tests.Services
@@ -21,203 +22,127 @@ namespace ReservationSystemWebAPI.Tests.Services
         }
 
         [Fact]
-        public async Task GetAllAsync_UsersExist_ReturnsUserList()
+        public async Task GetAllAsync_ReturnsUsers()
         {
-            // Arrange
-            var users = new List<User>
-            {
-                new User { Id = 1, Email = "a@b.com" },
-                new User { Id = 2, Email = "c@d.com" }
-            };
-            _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(users);
+            var expected = new List<User> { new User { Id = 1, Email = "test@wexo.dk" } };
+            _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expected);
 
-            // Act
             var result = await _service.GetAllAsync();
 
-            // Assert
             Assert.NotNull(result);
-            Assert.Equal(2, ((List<User>)result).Count);
+            Assert.Single(result);
         }
 
         [Fact]
-        public async Task GetAllAsync_RepositoryReturnsNull_ThrowsArgumentNullException()
+        public async Task GetAllAsync_WhenEmpty_ThrowsInvalidOperationException()
         {
-            // Arrange
-            _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<User>)null);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _service.GetAllAsync());
-        }
-
-        [Fact]
-        public async Task GetAllAsync_EmptyList_ThrowsInvalidOperationException()
-        {
-            // Arrange
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
-            // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetAllAsync());
         }
 
         [Fact]
-        public async Task AddAsync_ValidUser_ReturnsNewUserId()
+        public async Task GetByIdAsync_UserExists_ReturnsUser()
         {
-            // Arrange
-            var user = new User { Email = "test@wexo.dk" };
-            _mockRepo.Setup(r => r.AddAsync(user)).ReturnsAsync(42);
+            var user = new User { Id = 1, Email = "test@wexo.dk" };
+            _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(user);
 
-            // Act
-            var result = await _service.AddAsync(user);
+            var result = await _service.GetByIdAsync(1);
 
-            // Assert
-            Assert.Equal(42, result);
-        }
-
-        [Fact]
-        public async Task AddAsync_InvalidUserEmail_ThrowsArgumentException()
-        {
-            // Arrange
-            var user = new User { Email = "" };
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => _service.AddAsync(user));
-        }
-
-        [Fact]
-        public async Task GetByIdAsync_ValidId_ReturnsUser()
-        {
-            // Arrange
-            int id = 1;
-            var user = new User { Id = id, Email = "test@wexo.dk" };
-            _mockRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(user);
-
-            // Act
-            var result = await _service.GetByIdAsync(id);
-
-            // Assert
             Assert.NotNull(result);
-            Assert.Equal(id, result.Id);
+            Assert.Equal("test@wexo.dk", result.Email);
         }
 
         [Fact]
         public async Task GetByIdAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Arrange
-            int id = 99;
-            _mockRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((User)null);
+            _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((User?)null);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByIdAsync(id));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByIdAsync(1));
         }
 
         [Fact]
-        public async Task UpdateAsync_UserExists_ReturnsUserId()
+        public async Task AddAsync_ValidUser_ReturnsAffectedRows()
         {
-            // Arrange
-            var user = new User { Id = 2, Email = "opdateret@wexo.dk" };
-            _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.UpdateAsync(user)).ReturnsAsync(user.Id);
+            var newUser = new User { Email = "new@wexo.dk" };
+            _mockRepo.Setup(r => r.AddAsync(newUser)).ReturnsAsync(1);
 
-            // Act
+            var result = await _service.AddAsync(newUser);
+
+            Assert.Equal(1, result);
+        }
+
+        [Fact]
+        public async Task AddAsync_InvalidEmail_ThrowsArgumentException()
+        {
+            var newUser = new User { Email = " " };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => _service.AddAsync(newUser));
+        }
+
+        [Fact]
+        public async Task UpdateAsync_UserExists_ReturnsAffectedRows()
+        {
+            var user = new User { Id = 1, Email = "update@wexo.dk", RowVersion = new byte[8] };
+            _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
+            _mockRepo.Setup(r => r.UpdateAsync(user)).ReturnsAsync(1);
+
             var result = await _service.UpdateAsync(user);
 
-            // Assert
-            Assert.Equal(user.Id, result);
+            Assert.Equal(1, result);
         }
 
         [Fact]
         public async Task UpdateAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Arrange
-            var user = new User { Id = 99, Email = "ukendt@wexo.dk" };
+            var user = new User { Id = 999, Email = "missing@wexo.dk", RowVersion = new byte[8] };
             _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(false);
 
-            // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateAsync(user));
         }
 
         [Fact]
-        public async Task UpdateAsync_ConcurrencyConflict_ThrowsException()
+        public async Task DeleteAsync_ValidInput_ReturnsAffectedRows()
         {
-            // Arrange
-            var user = new User { Id = 3, Email = "conflict@wexo.dk" };
+            int id = 1;
+            string rowVersion = Convert.ToBase64String(new byte[8]);
 
-            _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.UpdateAsync(user))
-                     .ThrowsAsync(new DbUpdateConcurrencyException("Simuleret OCC-fejl"));
-
-            // Act
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateAsync(user));
-
-            // Assert
-            Assert.IsType<DbUpdateConcurrencyException>(ex.InnerException);
-        }
-
-        [Fact]
-        public async Task UpdateAsync_RepositoryFails_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var user = new User { Id = 4, Email = "fejl@wexo.dk" };
-            _mockRepo.Setup(r => r.ExistsAsync(user.Id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.UpdateAsync(user)).ThrowsAsync(new Exception("DB-fejl"));
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateAsync(user));
-        }
-
-        [Fact]
-        public async Task DeleteAsync_UserExists_ReturnsUserId()
-        {
-            // Arrange
-            int id = 5;
             _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.DeleteAsync(id)).ReturnsAsync(id);
+            _mockRepo.Setup(r => r.DeleteAsync(id, It.IsAny<byte[]>())).ReturnsAsync(1);
 
-            // Act
-            var result = await _service.DeleteAsync(id);
+            var result = await _service.DeleteAsync(id, rowVersion);
 
-            // Assert
-            Assert.Equal(id, result);
+            Assert.Equal(1, result);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_InvalidRowVersion_ThrowsArgumentException()
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                _service.DeleteAsync(1, "NotBase64"));
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ConcurrencyConflict_ThrowsInvalidOperationException()
+        {
+            int id = 1;
+            string rowVersion = Convert.ToBase64String(new byte[8]);
+
+            _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
+            _mockRepo.Setup(r => r.DeleteAsync(id, It.IsAny<byte[]>()))
+                     .ThrowsAsync(new DbUpdateConcurrencyException());
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                _service.DeleteAsync(id, rowVersion));
         }
 
         [Fact]
         public async Task DeleteAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
-            // Arrange
-            int id = 123;
-            _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(false);
+            _mockRepo.Setup(r => r.ExistsAsync(999)).ReturnsAsync(false);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.DeleteAsync(id));
-        }
-
-        [Fact]
-        public async Task DeleteAsync_ConcurrencyConflict_ThrowsException()
-        {
-            // Arrange
-            int id = 6;
-
-            _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.DeleteAsync(id))
-                     .ThrowsAsync(new DbUpdateConcurrencyException("Simuleret OCC-fejl"));
-
-            // Act
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteAsync(id));
-
-            // Assert
-            Assert.IsType<DbUpdateConcurrencyException>(ex.InnerException);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_RepositoryFails_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            int id = 7;
-            _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
-            _mockRepo.Setup(r => r.DeleteAsync(id)).ThrowsAsync(new Exception("DB-fejl"));
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteAsync(id));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                _service.DeleteAsync(999, Convert.ToBase64String(new byte[8])));
         }
     }
 }

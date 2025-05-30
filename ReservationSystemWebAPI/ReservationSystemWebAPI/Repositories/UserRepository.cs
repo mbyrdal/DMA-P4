@@ -5,8 +5,8 @@ using ReservationSystemWebAPI.Models;
 namespace ReservationSystemWebAPI.Repositories
 {
     /// <summary>
-    /// Repository responsible for performing data operations on the Users table.
-    /// Encapsulates Entity Framework logic and abstracts database access.
+    /// Repository responsible for CRUD operations on the Users table.
+    /// Contains only data access logic; does not throw exceptions.
     /// </summary>
     public class UserRepository : IUserRepository
     {
@@ -17,78 +17,81 @@ namespace ReservationSystemWebAPI.Repositories
             _dbContext = dbContext;
         }
 
-        /// <summary>
-        /// Retrieves all users from the database asynchronously.
-        /// </summary>
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _dbContext.Users.ToListAsync();
         }
 
-        /// <summary>
-        /// Finds a single user by ID asynchronously.
-        /// </summary>
-        public async Task<User> GetByIdAsync(int id)
+        public async Task<User?> GetByIdAsync(int id)
         {
             return await _dbContext.Users.FindAsync(id);
         }
 
         /// <summary>
-        /// Adds a new user to the database and saves changes asynchronously.
+        /// Adds a new user and returns the number of affected rows.
         /// </summary>
-        /// <param name="user">User object to add.</param>
-        /// <returns>Number of state entries written to the database.</returns>
         public async Task<int> AddAsync(User user)
         {
             await _dbContext.Users.AddAsync(user);
-            int rows = await _dbContext.SaveChangesAsync();
-
-            if (rows == 0)
-                throw new InvalidOperationException("No changes were saved");
-
-            return user.Id;
-        }
-
-        /// <summary>
-        /// Updates an existing user in the database by attaching the modified entity
-        /// and setting its state to Modified.
-        /// </summary>
-        /// <param name="user">The updated user object.</param>
-        /// <returns>Number of state entries written to the database.</returns>
-        /// <remarks>
-        /// Entity Framework Core uses a change tracker. Here we attach the entity and tell EF it's modified,
-        /// which causes all properties to be marked for update — even if only some were changed.
-        /// </remarks>
-        public async Task<int> UpdateAsync(User user)
-        {
-            _dbContext.Entry(user).State = EntityState.Modified;
             return await _dbContext.SaveChangesAsync();
         }
 
         /// <summary>
-        /// Deletes a user by ID from the database asynchronously.
+        /// Updates an existing user by attaching the entity and marking as modified.
+        /// Returns the number of affected rows.
         /// </summary>
-        /// <param name="id">ID of the user to delete.</param>
-        /// <returns>Number of state entries written to the database, or 0 if user was not found.</returns>
-        public async Task<int> DeleteAsync(int id)
+        public async Task<int> UpdateAsync(User user)
         {
-            User existingUser = await _dbContext.Users.FindAsync(id);
+            // Attach user entity to context
+            _dbContext.Users.Attach(user);
 
-            if (existingUser == null)
-                return 0;
+            // Tell EF this entity is modified
+            // This is necessary to ensure that EF tracks changes to the entity
+            _dbContext.Entry(user).State = EntityState.Modified;
 
-            _dbContext.Users.Remove(existingUser);
-            int rows = await _dbContext.SaveChangesAsync();
+            // Set original RowVersion for concurrency check
+            if(user.RowVersion == null)
+            {
+                // If RowVersion is null, we cannot perform concurrency checks
+                throw new InvalidOperationException("Manglende concurrency token (RowVersion) for update.");
+            }
 
-            if (rows == 0)
-                throw new InvalidOperationException("No user was deleted from the database.");
+            _dbContext.Entry(user).OriginalValues["RowVersion"] = user.RowVersion;
 
-            return id;
+            // Save changes will throw DbUpdateConcurrencyException if RowVersion does not match (concurrency conflict)
+            return await _dbContext.SaveChangesAsync();
         }
 
         /// <summary>
-        /// Checks whether a user with the given ID exists in the database.
+        /// Deletes the user by id.
+        /// Returns:
+        /// - Number of affected rows if deleted
+        /// - 0 if user not found
         /// </summary>
+        public async Task<int> DeleteAsync(int id, byte[] rowVersion)
+        {
+            if(rowVersion == null)
+            {
+                throw new InvalidOperationException("Manglende concurrency token (RowVersion) for delete.");
+            }
+
+            // Create a stub user with just Id and RowVersion
+            // No need to fetch entire user entity from database
+            // DELETE FROM Users WHERE Id = @id AND RowVersion = @rowVersion
+            var userToDelete = new User
+            {
+                Id = id,
+                RowVersion = rowVersion
+            };
+
+            // Attach User with RowVersion for concurrency check
+            _dbContext.Entry(userToDelete).State = EntityState.Deleted;
+            _dbContext.Entry(userToDelete).OriginalValues["RowVersion"] = rowVersion;
+
+
+            return await _dbContext.SaveChangesAsync();
+        }
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _dbContext.Users.AnyAsync(u => u.Id == id);

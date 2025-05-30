@@ -10,21 +10,38 @@ namespace ReservationSystemWebAPI.Repositories
     {
         private readonly ReservationDbContext _context;
 
+        // Constructor: Inject the database context
         public ReservationRepository(ReservationDbContext context)
         {
             _context = context;
         }
 
+        /// <summary>
+        /// Retrieves all reservations including their associated items asynchronously.
+        /// </summary>
+        /// <returns>A collection of all reservations with items.</returns>
         public async Task<IEnumerable<Reservation>> GetAllAsync()
         {
             return await _context.Reservations.Include(r => r.Items).ToListAsync();
         }
 
+        /// <summary>
+        /// Retrieves a specific reservation by its ID, including its items asynchronously.
+        /// Returns null if not found.
+        /// </summary>
+        /// <param name="id">The ID of the reservation.</param>
+        /// <returns>The reservation with included items or null if not found.</returns>
         public async Task<Reservation?> GetByIdAsync(int id)
         {
             return await _context.Reservations.Include(r => r.Items).FirstOrDefaultAsync(r => r.Id == id);
         }
 
+        /// <summary>
+        /// Retrieves all reservations associated with a given user email asynchronously.
+        /// Includes reservation items.
+        /// </summary>
+        /// <param name="email">The user's email address.</param>
+        /// <returns>A collection of reservations for the specified email.</returns>
         public async Task<IEnumerable<Reservation>> GetByUserEmailAsync(string email)
         {
             return await _context.Reservations
@@ -33,28 +50,23 @@ namespace ReservationSystemWebAPI.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Reservation> CreateAsync(ReservationCreateDto dto)
+        /// <summary>
+        /// Creates a new reservation and decrements the inventory for each reserved item asynchronously.
+        /// Assumes reservation entity is fully built by service.
+        /// Throws <see cref="InvalidOperationException"/> if there is insufficient inventory for any item.
+        /// </summary>
+        /// <param name="reservation">The reservation entity to create.</param>
+        /// <returns>The created reservation.</returns>
+        public async Task<Reservation> CreateAsync(Reservation reservation)
         {
-            var reservation = new Reservation
-            {
-                Email = dto.Email,
-                Status = dto.Status,
-                CreatedAt = DateTime.Now,
-                Items = dto.Items.Select(i => new ReservationItems
-                {
-                    Equipment = i.Equipment,
-                    Quantity = i.Quantity,
-                    IsReturned = false
-                }).ToList()
-            };
-
-            // Decrement inventory for each reserved item
+            // Decrement inventory counts for reserved items
             foreach (var item in reservation.Items)
             {
                 var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing == null || existing.Antal < item.Quantity)
+                {
                     throw new InvalidOperationException($"Ikke nok af '{item.Equipment}' på lager.");
-
+                }
                 existing.Antal -= item.Quantity;
             }
 
@@ -63,44 +75,60 @@ namespace ReservationSystemWebAPI.Repositories
             return reservation;
         }
 
-        public async Task<int> UpdateAsync(int id, ReservationUpdateDto dto)
+        /// <summary>
+        /// Updates an existing reservation and its items asynchronously.
+        /// Uses RowVersion concurrency tokens to detect conflicting updates.
+        /// Returns:
+        /// -1 if concurrency conflict,
+        /// 0 if reservation not found,
+        /// otherwise number of affected rows.
+        /// Throws <see cref="ArgumentException"/> if concurrency tokens are missing.
+        /// </summary>
+        /// <param name="id">The reservation ID to update.</param>
+        /// <param name="updatedReservation">The reservation entity with updated data and concurrency tokens.</param>
+        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
+        public async Task<int> UpdateAsync(int id, Reservation updatedReservation)
         {
-            var reservation = await _context.Reservations
+            if (updatedReservation.RowVersion == null)
+            {
+                throw new ArgumentException("Manlgende concurrency token (RowVersion) for update.");
+            }
+
+            var existingReservation = await _context.Reservations
                 .Include(r => r.Items)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
-            if (reservation == null)
+            if (existingReservation == null)
             {
-                return 0;
+                return 0; // Not found
             }
 
-            // Set original RowVersion for concurrency check (modified to proper syntax)
-            _context.Entry(reservation).OriginalValues["RowVersion"] = dto.RowVersion;
+            // Set original concurrency token for reservation
+            _context.Entry(existingReservation).OriginalValues["RowVersion"] = updatedReservation.RowVersion;
 
-            // Update reservation properties
-            if (dto.Status != null)
-            {
-                reservation.Status = dto.Status;
-            }
+            // Update Reservation properties (status indicating activity and IsCollected whether items have been collected)
+            existingReservation.Status = updatedReservation.Status;
+            existingReservation.IsCollected = updatedReservation.IsCollected;
 
-            if (dto.IsCollected.HasValue)
+            // Update items - assuming updatedReservation.Items contains full updated items with concurrency tokens
+            if (updatedReservation.Items != null && updatedReservation.Items.Any())
             {
-                reservation.IsCollected = dto.IsCollected.Value;
-            }
-
-            // Update reservation items if provided
-            if (dto.Items != null)
-            {
-                foreach (var itemDto in dto.Items)
+                foreach (var updatedItem in updatedReservation.Items)
                 {
-                    var item = reservation.Items.FirstOrDefault(i => i.Id == itemDto.Id);
-                    if (item == null) continue;
+                    var existingItem = existingReservation.Items.FirstOrDefault(i => i.Id == updatedItem.Id);
+                    if (existingItem == null) continue;
 
-                    // Set concurrency token for item
-                    _context.Entry(item).OriginalValues["RowVersion"] = itemDto.RowVersion;
+                    if (updatedItem.RowVersion == null)
+                    {
+                        throw new ArgumentException($"Missing concurrency token for item with ID {updatedItem.Id}.");
+                    }
 
-                    // Update quantity and other fields
-                    item.Quantity = itemDto.Quantity;
+                    // Set original concurrency token for item
+                    _context.Entry(existingItem).OriginalValues["RowVersion"] = updatedItem.RowVersion;
+
+                    // Update fields (e.g., Quantity, IsReturned)
+                    existingItem.Quantity = updatedItem.Quantity;
+                    existingItem.IsReturned = updatedItem.IsReturned;
                 }
             }
 
@@ -110,76 +138,20 @@ namespace ReservationSystemWebAPI.Repositories
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Return -1 to indicate concurrency conflict (instead of 0)
-                return -1;
-            }
-            catch (Exception ex)
-            {
-                // Rethrow unexpected exceptions
-                throw;
+                return -1; // Concurrency conflict
             }
         }
 
-        /*
-        public async Task<int> UpdateAsync(int id, ReservationUpdateDto dto)
-        {
-            var reservation = await _context.Reservations
-                .Include(r => r.Items)
-                .FirstOrDefaultAsync(r => r.Id == id);
-
-            if (reservation == null)
-            {
-                return 0;
-            }
-
-            // Set original RowVersion for concurrency check on Reservation
-            _context.Entry(reservation).Property("RowVersion").OriginalValue = dto.RowVersion;
-
-            // Update reservation properties
-            if (dto.Status != null)
-            {
-                reservation.Status = dto.Status;
-            }
-
-            if (dto.IsCollected.HasValue)
-            {
-                reservation.IsCollected = dto.IsCollected.Value;
-            }
-
-            // Update reservation items if provided
-            if (dto.Items != null)
-            {
-                foreach (var itemDto in dto.Items)
-                {
-                    var item = reservation.Items.FirstOrDefault(i => i.Id == itemDto.Id);
-                    if (item == null) continue;
-
-                    // Set original RowVersion for concurrency check on the ReservationItem
-                    _context.Entry(item).Property("RowVersion").OriginalValue = itemDto.RowVersion;
-
-                    // Update quantity and other fields
-                    item.Quantity = itemDto.Quantity;
-                }
-            }
-
-            try
-            {
-                return await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Handle concurrency exception - return 0 to indicate concurrency conflict
-                // throw new InvalidOperationException("Der opstod en konflikt ved opdatering af reservationen. Genindlæs venligst siden og prøv igen.");
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                // Rethrow unexpected exceptions (or wrap them)
-                throw;
-            }
-        }
-        */
-
+        /// <summary>
+        /// Deletes a reservation and returns items to inventory asynchronously.
+        /// Handles concurrency conflicts explicitly.
+        /// Returns:
+        /// -1 if concurrency conflict,
+        /// 0 if reservation not found,
+        /// otherwise number of affected rows.
+        /// </summary>
+        /// <param name="id">The reservation ID to delete.</param>
+        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
         public async Task<int> DeleteAsync(int id)
         {
             var reservation = await _context.Reservations
@@ -191,20 +163,45 @@ namespace ReservationSystemWebAPI.Repositories
                 return 0; // Reservation not found
             }
 
-            // Return items to inventory (WEXO DEPOT)
+            // Return reserved quantities back to inventory
             foreach (var item in reservation.Items)
             {
                 var existing = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                 if (existing != null)
                 {
-                    existing.Antal += item.Quantity; // Return the quantity to inventory
+                    existing.Antal += item.Quantity;
                 }
             }
 
             _context.Reservations.Remove(reservation);
-            return await _context.SaveChangesAsync();
+
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Concurrency conflict detected
+                return -1;
+            }
+            catch (Exception)
+            {
+                // Rethrow unexpected exceptions
+                throw;
+            }
         }
 
+        /// <summary>
+        /// Marks all items in a reservation as returned and increments inventory accordingly asynchronously.
+        /// Uses concurrency tokens to detect update conflicts.
+        /// Sets the reservation status to "Inaktiv".
+        /// Returns:
+        /// -1 if concurrency conflict,
+        /// 0 if reservation or items not found,
+        /// otherwise number of affected rows.
+        /// </summary>
+        /// <param name="reservationId">The reservation ID whose items are returned.</param>
+        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
         public async Task<int> ReturnItemsAsync(int reservationId)
         {
             var reservation = await _context.Reservations
@@ -216,41 +213,44 @@ namespace ReservationSystemWebAPI.Repositories
                 return 0;
             }
 
-            // Add concurrency tracking for items
-            var itemVersions = new Dictionary<int, byte[]>();
-
             foreach (var item in reservation.Items)
             {
                 if (!item.IsReturned)
                 {
-                    // Store current rowVersion before updating
-                    itemVersions[item.Id] = item.RowVersion;
+                    // Set concurrency token for item
+                    _context.Entry(item).OriginalValues["RowVersion"] = item.RowVersion;
 
-                    item.IsReturned = true; // Mark item as returned
+                    item.IsReturned = true; // Mark as returned
 
                     var equipment = await _context.WEXO_DEPOT.FirstOrDefaultAsync(e => e.Navn == item.Equipment);
                     if (equipment != null)
                     {
-                        // Set item version before saving
+                        // Set concurrency token for equipment
                         _context.Entry(equipment).OriginalValues["RowVersion"] = equipment.RowVersion;
-                        equipment.Antal += item.Quantity; // Return the quantity to inventory
+                        equipment.Antal += item.Quantity; // Increment inventory
                     }
                 }
             }
 
-            reservation.Status = "Inaktiv"; // Set status to inactive
-            
+            reservation.Status = "Inaktiv"; // Update reservation status
+
             try
             {
                 return await _context.SaveChangesAsync();
             }
-            catch(DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException)
             {
-                // Return -1 to indicate concurrency conflict
+                // Concurrency conflict detected
                 return -1;
             }
         }
 
+        /// <summary>
+        /// Creates a history record for a reservation asynchronously.
+        /// Returns 0 if reservation not found, otherwise number of affected rows.
+        /// </summary>
+        /// <param name="reservationId">The reservation ID for which to create history.</param>
+        /// <returns>The number of affected rows or 0 if reservation not found.</returns>
         public async Task<int> CreateHistoryAsync(int reservationId)
         {
             var reservation = await _context.Reservations

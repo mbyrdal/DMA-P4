@@ -2,12 +2,12 @@
 using Moq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq;
 using ReservationSystemWebAPI.Services;
 using ReservationSystemWebAPI.Repositories;
 using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace ReservationSystemWebAPI.Tests.Services
 {
@@ -42,7 +42,9 @@ namespace ReservationSystemWebAPI.Tests.Services
                 Items = new List<ReservationItems>()
             };
 
-            _mockRepo.Setup(r => r.CreateAsync(dto)).ReturnsAsync(expectedReservation);
+            _mockRepo
+                .Setup(r => r.CreateAsync(It.IsAny<Reservation>()))
+                .ReturnsAsync(expectedReservation);
 
             // Act
             var result = await _service.CreateAsync(dto);
@@ -63,7 +65,7 @@ namespace ReservationSystemWebAPI.Tests.Services
         }
 
         [Fact]
-        public async Task CreateAsync_RepoReturnsNull_ReturnsNull()
+        public async Task CreateAsync_RepoReturnsNull_ThrowsException()
         {
             // Arrange
             var dto = new ReservationCreateDto
@@ -75,37 +77,32 @@ namespace ReservationSystemWebAPI.Tests.Services
                 }
             };
 
-            _mockRepo.Setup(r => r.CreateAsync(dto)).ReturnsAsync((Reservation)null);
+            // Even though the method shouldn't return null, simulate it anyway (force null)
+            _mockRepo
+                .Setup(r => r.CreateAsync(It.IsAny<Reservation>()))
+                .ReturnsAsync((Reservation)null!); // null-forced on non-nullable
 
-            // Act
-            var result = await _service.CreateAsync(dto);
-
-            // Assert
-            Assert.Null(result);
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateAsync(dto));
         }
 
         [Fact]
         public async Task ReturnItemsAsync_Success_ReturnsTrue()
         {
-            // Arrange
             int reservationId = 1;
             _mockRepo.Setup(r => r.ReturnItemsAsync(reservationId)).ReturnsAsync(1);
 
-            // Act
             var result = await _service.ReturnItemsAsync(reservationId);
 
-            // Assert
             Assert.True(result);
         }
 
         [Fact]
         public async Task ReturnItemsAsync_NotFound_ThrowsException()
         {
-            // Arrange
             int reservationId = 999;
             _mockRepo.Setup(r => r.ReturnItemsAsync(reservationId)).ReturnsAsync(0);
 
-            // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.ReturnItemsAsync(reservationId)
             );
@@ -114,11 +111,9 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task ReturnItemsAsync_ConcurrencyConflict_ThrowsException()
         {
-            // Arrange
             int reservationId = 1;
             _mockRepo.Setup(r => r.ReturnItemsAsync(reservationId)).ReturnsAsync(-1);
 
-            // Act & Assert
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>
                 _service.ReturnItemsAsync(reservationId)
             );
@@ -127,25 +122,20 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task DeleteAsync_Success_ReturnsTrue()
         {
-            // Arrange
             int reservationId = 1;
             _mockRepo.Setup(r => r.DeleteAsync(reservationId)).ReturnsAsync(1);
 
-            // Act
             var result = await _service.DeleteAsync(reservationId);
 
-            // Assert
             Assert.True(result);
         }
 
         [Fact]
         public async Task DeleteAsync_NotFound_ThrowsException()
         {
-            // Arrange
             int reservationId = 404;
             _mockRepo.Setup(r => r.DeleteAsync(reservationId)).ReturnsAsync(0);
 
-            // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.DeleteAsync(reservationId)
             );
@@ -154,25 +144,20 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task UpdateAsync_Success_ReturnsTrue()
         {
-            // Arrange
-            var dto = new ReservationUpdateDto { RowVersion = new byte[8] };
-            _mockRepo.Setup(r => r.UpdateAsync(1, dto)).ReturnsAsync(1);
+            var dto = new ReservationUpdateDto { RowVersion = Convert.ToBase64String(new byte[8]) };
+            _mockRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Reservation>())).ReturnsAsync(1);
 
-            // Act
             var result = await _service.UpdateAsync(1, dto);
 
-            // Assert
             Assert.True(result);
         }
 
         [Fact]
         public async Task UpdateAsync_NotFound_ThrowsException()
         {
-            // Arrange
-            var dto = new ReservationUpdateDto { RowVersion = new byte[8] };
-            _mockRepo.Setup(r => r.UpdateAsync(1, dto)).ReturnsAsync(0);
+            var dto = new ReservationUpdateDto { RowVersion = Convert.ToBase64String(new byte[8]) };
+            _mockRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Reservation>())).ReturnsAsync(0);
 
-            // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _service.UpdateAsync(1, dto));
         }
@@ -180,11 +165,9 @@ namespace ReservationSystemWebAPI.Tests.Services
         [Fact]
         public async Task UpdateAsync_ConcurrencyConflict_ThrowsException()
         {
-            // Arrange
-            var dto = new ReservationUpdateDto { RowVersion = new byte[8] };
-            _mockRepo.Setup(r => r.UpdateAsync(1, dto)).ReturnsAsync(-1);
+            var dto = new ReservationUpdateDto { RowVersion = Convert.ToBase64String(new byte[8]) };
+            _mockRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Reservation>())).ReturnsAsync(-1);
 
-            // Act & Assert
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>
                 _service.UpdateAsync(1, dto));
         }
