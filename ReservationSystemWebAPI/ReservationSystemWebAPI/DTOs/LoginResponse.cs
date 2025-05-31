@@ -3,23 +3,24 @@
 namespace ReservationSystemWebAPI.DTOs
 {
     /// <summary>
-    /// Represents the response returned to the client after a successful login.
-    /// Includes the user's email, role, and a JWT token.
+    /// Represents the data returned to the client upon successful authentication.
+    /// Includes the user's identity and an access token for authorized requests.
     /// </summary>
     public class LoginResponse
     {
         /// <summary>
-        /// The email address of the authenticated user.
+        /// Gets or sets the email address of the authenticated user.
         /// </summary>
         public string? Email { get; set; }
 
         /// <summary>
-        /// The role assigned to the authenticated user (e.g., "Bruger", "Admin").
+        /// Gets or sets the role assigned to the user (e.g., <c>"Bruger"</c>, <c>"Admin"</c>).
         /// </summary>
         public string? Role { get; set; }
 
         /// <summary>
-        /// The JSON Web Token (JWT) used for authenticating future requests.
+        /// Gets or sets the JSON Web Token (JWT) issued to the user.
+        /// This token must be included in the Authorization header of subsequent requests.
         /// </summary>
         public string? Token { get; set; }
     }

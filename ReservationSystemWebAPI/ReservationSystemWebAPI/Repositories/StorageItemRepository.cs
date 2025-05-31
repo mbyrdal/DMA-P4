@@ -5,16 +5,16 @@ using ReservationSystemWebAPI.Models;
 namespace ReservationSystemWebAPI.Repositories
 {
     /// <summary>
-    /// Handles data access operations for <see cref="StorageItem"/> entities.
-    /// Implements <see cref="IStorageItemRepository"/> contract.
-    /// Optimistic concurrency control is implemented on update operations using a <c>RowVersion</c> concurrency token.
+    /// Provides data access operations for <see cref="StorageItem"/> entities.
+    /// Implements the <see cref="IStorageItemRepository"/> interface.
+    /// Supports optimistic concurrency using the <c>RowVersion</c> property.
     /// </summary>
     public class StorageItemRepository : IStorageItemRepository
     {
         private readonly ReservationDbContext _dbContext;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="StorageItemRepository"/>.
+        /// Initializes a new instance of the <see cref="StorageItemRepository"/> class.
         /// </summary>
         /// <param name="dbContext">The EF Core database context.</param>
         public StorageItemRepository(ReservationDbContext dbContext)
@@ -23,29 +23,29 @@ namespace ReservationSystemWebAPI.Repositories
         }
 
         /// <summary>
-        /// Retrieves all storage items from the database.
+        /// Retrieves all storage items from the database asynchronously.
         /// </summary>
-        /// <returns>A list of all <see cref="StorageItem"/> entities.</returns>
+        /// <returns>A collection of all <see cref="StorageItem"/> entities.</returns>
         public async Task<IEnumerable<StorageItem>> GetAllAsync()
         {
             return await _dbContext.WEXO_DEPOT.ToListAsync();
         }
 
         /// <summary>
-        /// Finds a storage item by its ID.
+        /// Retrieves a storage item by its unique ID asynchronously.
         /// </summary>
-        /// <param name="id">The ID of the storage item.</param>
-        /// <returns>The <see cref="StorageItem"/> with the specified ID, or <c>null</c> if not found.</returns>
+        /// <param name="id">The unique identifier of the storage item.</param>
+        /// <returns>The matching <see cref="StorageItem"/> if found; otherwise, <c>null</c>.</returns>
         public async Task<StorageItem?> GetByIdAsync(int id)
         {
             return await _dbContext.WEXO_DEPOT.FindAsync(id);
         }
 
         /// <summary>
-        /// Adds a new storage item to the database.
+        /// Adds a new storage item to the database asynchronously.
         /// </summary>
-        /// <param name="newItem">The new <see cref="StorageItem"/> to add.</param>
-        /// <returns>The number of affected rows (should be 1 if successful).</returns>
+        /// <param name="newItem">The <see cref="StorageItem"/> to add.</param>
+        /// <returns>The number of affected rows, usually 1 if the operation is successful.</returns>
         public async Task<int> AddAsync(StorageItem newItem)
         {
             await _dbContext.WEXO_DEPOT.AddAsync(newItem);
@@ -54,20 +54,20 @@ namespace ReservationSystemWebAPI.Repositories
 
         /// <summary>
         /// Updates an existing storage item with optimistic concurrency control.
-        /// Uses the <c>RowVersion</c> property as a concurrency token to detect conflicts.
+        /// Uses the <c>RowVersion</c> concurrency token to detect update conflicts.
         /// </summary>
-        /// <param name="updateItem">The storage item entity with updated values including the original <c>RowVersion</c>.</param>
-        /// <returns>The number of affected rows (should be 1 if successful).</returns>
+        /// <param name="updateItem">The <see cref="StorageItem"/> containing updated values and the original concurrency token.</param>
+        /// <returns>The number of affected rows, usually 1 if the update succeeds.</returns>
         /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict is detected.</exception>
         public async Task<int> UpdateAsync(StorageItem updateItem)
         {
-            // Attach the entity so EF Core can track changes
+            // Attach entity so EF Core can track changes
             _dbContext.Attach(updateItem);
 
-            // Set original RowVersion for concurrency check to detect conflicts
+            // Set original RowVersion to detect concurrency conflicts
             _dbContext.Entry(updateItem).Property(si => si.RowVersion).OriginalValue = updateItem.RowVersion;
 
-            // Mark entity as modified so EF Core issues update
+            // Mark the entire entity as modified
             _dbContext.Entry(updateItem).State = EntityState.Modified;
 
             try
@@ -76,29 +76,30 @@ namespace ReservationSystemWebAPI.Repositories
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Rethrow to let upper layers handle concurrency conflicts gracefully
+                // Propagate concurrency conflict to caller for handling
                 throw;
             }
         }
 
         /// <summary>
-        /// Removes a storage item by its ID.
+        /// Deletes a storage item by its unique identifier asynchronously.
         /// </summary>
-        /// <param name="id">The ID of the storage item to remove.</param>
-        /// <returns>The number of affected rows (0 if the item was not found).</returns>
+        /// <param name="id">The ID of the storage item to delete.</param>
+        /// <returns>The number of affected rows, or 0 if the item was not found.</returns>
         public async Task<int> DeleteAsync(int id)
         {
             var item = await _dbContext.WEXO_DEPOT.FindAsync(id);
-            if (item == null) return 0;
+            if (item == null)
+                return 0;
 
             _dbContext.WEXO_DEPOT.Remove(item);
             return await _dbContext.SaveChangesAsync();
         }
 
         /// <summary>
-        /// Checks if a storage item with the specified ID exists in the database.
+        /// Checks asynchronously whether a storage item with the specified ID exists.
         /// </summary>
-        /// <param name="id">The ID to check for existence.</param>
+        /// <param name="id">The storage item ID to check.</param>
         /// <returns><c>true</c> if an item with the ID exists; otherwise, <c>false</c>.</returns>
         public async Task<bool> ExistsAsync(int id)
         {

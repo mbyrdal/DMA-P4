@@ -7,7 +7,8 @@ using System.Text.Json.Serialization;
 namespace ReservationSystemWebAPI.Models
 {
     /// <summary>
-    /// Represents a reservation made by a user, including metadata such as email, status, and associated reserved items.
+    /// Represents a reservation created by a user.
+    /// Contains metadata such as the user's email, reservation status, creation time, and associated items.
     /// </summary>
     public class Reservation
     {
@@ -17,18 +18,18 @@ namespace ReservationSystemWebAPI.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the email address of the user who created the reservation.
+        /// Gets or sets the email address of the user who made the reservation.
         /// </summary>
         public string? Email { get; set; }
 
         /// <summary>
-        /// Gets or sets the timestamp indicating when the reservation was created.
-        /// Defaults to the current date and time.
+        /// Gets or sets the date and time when the reservation was created.
+        /// Defaults to the current server time.
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         /// <summary>
-        /// Gets or sets the list of equipment items associated with this reservation.
+        /// Gets or sets the list of items included in the reservation.
         /// </summary>
         public List<ReservationItems> Items { get; set; } = new();
 
@@ -38,13 +39,13 @@ namespace ReservationSystemWebAPI.Models
         public bool IsCollected { get; set; }
 
         /// <summary>
-        /// Gets or sets the current status of the reservation (e.g., pending, confirmed, cancelled).
+        /// Gets or sets the current status of the reservation (e.g., <c>pending</c>, <c>confirmed</c>, <c>cancelled</c>).
         /// </summary>
         public string? Status { get; set; }
 
         /// <summary>
-        /// Gets or sets the row version used for optimistic concurrency control (OCC).
-        /// This value is used internally and is excluded from API responses.
+        /// Gets or sets the row version used for optimistic concurrency control.
+        /// This property is used internally and is excluded from API responses.
         /// </summary>
         [Timestamp]
         [JsonIgnore]
@@ -52,8 +53,8 @@ namespace ReservationSystemWebAPI.Models
     }
 
     /// <summary>
-    /// Represents a specific item and quantity reserved as part of a reservation.
-    /// Each item links to a parent reservation.
+    /// Represents an individual item reserved as part of a reservation,
+    /// including quantity and return status.
     /// </summary>
     public class ReservationItems
     {
@@ -63,17 +64,17 @@ namespace ReservationSystemWebAPI.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the name or identifier of the equipment being reserved.
+        /// Gets or sets the name or identifier of the reserved equipment.
         /// </summary>
         public string Equipment { get; set; } = "";
 
         /// <summary>
-        /// Gets or sets the quantity of this equipment being reserved.
+        /// Gets or sets the quantity of the equipment being reserved.
         /// </summary>
         public int Quantity { get; set; }
 
         /// <summary>
-        /// Gets or sets the ID of the parent reservation this item belongs to.
+        /// Gets or sets the ID of the reservation to which this item belongs.
         /// </summary>
         public int ReservationId { get; set; }
 
@@ -83,8 +84,8 @@ namespace ReservationSystemWebAPI.Models
         public bool IsReturned { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets the row version used for optimistic concurrency control (OCC).
-        /// This field is excluded from API responses.
+        /// Gets or sets the row version used for optimistic concurrency control.
+        /// This property is used internally and is excluded from API responses.
         /// </summary>
         [Timestamp]
         [JsonIgnore]
@@ -92,7 +93,7 @@ namespace ReservationSystemWebAPI.Models
 
         /// <summary>
         /// Gets or sets the parent reservation associated with this item.
-        /// This reference is ignored in API responses.
+        /// This navigation property is ignored in API responses.
         /// </summary>
         [JsonIgnore]
         [ForeignKey("ReservationId")]

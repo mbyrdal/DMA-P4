@@ -3,7 +3,7 @@
 namespace ReservationSystemWebAPI.Repositories
 {
     /// <summary>
-    /// Repository interface for managing user entities.
+    /// Repository interface for managing <see cref="User"/> entities.
     /// </summary>
     public interface IUserRepository
     {
@@ -17,35 +17,42 @@ namespace ReservationSystemWebAPI.Repositories
         /// Retrieves a user by their unique ID asynchronously.
         /// </summary>
         /// <param name="id">The user ID.</param>
-        /// <returns>The user if found; otherwise, null.</returns>
+        /// <returns>The user if found; otherwise, <c>null</c>.</returns>
         Task<User?> GetByIdAsync(int id);
 
         /// <summary>
         /// Adds a new user asynchronously.
         /// </summary>
         /// <param name="user">The user entity to add.</param>
-        /// <returns>The number of affected records.</returns>
+        /// <returns>The number of affected records, typically 1 if successful.</returns>
         Task<int> AddAsync(User user);
 
         /// <summary>
-        /// Updates an existing user asynchronously.
+        /// Updates an existing user asynchronously with optimistic concurrency control.
+        /// Requires the original <c>RowVersion</c> concurrency token.
         /// </summary>
-        /// <param name="user">The user entity with updated data.</param>
-        /// <returns>The number of affected records.</returns>
+        /// <param name="user">The user entity with updated data including the original concurrency token.</param>
+        /// <returns>The number of affected records, typically 1 if successful.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the concurrency token (<c>RowVersion</c>) is missing.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict is detected.</exception>
         Task<int> UpdateAsync(User user);
 
         /// <summary>
-        /// Deletes a user by their ID asynchronously.
+        /// Deletes a user by their ID asynchronously using optimistic concurrency control.
+        /// Requires the original <c>RowVersion</c> concurrency token.
         /// </summary>
         /// <param name="id">The user ID to delete.</param>
-        /// <returns>The number of affected records.</returns>
+        /// <param name="rowVersion">The original concurrency token for the user.</param>
+        /// <returns>The number of affected records, or 0 if the user was not found.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the concurrency token (<c>RowVersion</c>) is missing.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict is detected.</exception>
         Task<int> DeleteAsync(int id, byte[] rowVersion);
 
         /// <summary>
         /// Checks if a user exists by their ID asynchronously.
         /// </summary>
         /// <param name="id">The user ID.</param>
-        /// <returns>True if the user exists; otherwise, false.</returns>
+        /// <returns><c>true</c> if the user exists; otherwise, <c>false</c>.</returns>
         Task<bool> ExistsAsync(int id);
     }
 }

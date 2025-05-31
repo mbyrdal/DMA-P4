@@ -1,4 +1,5 @@
 ﻿using ReservationSystemWebAPI.Models;
+using System.Threading.Tasks;
 
 namespace ReservationSystemWebAPI.Repositories
 {
@@ -8,11 +9,12 @@ namespace ReservationSystemWebAPI.Repositories
     public interface ILoginRepository
     {
         /// <summary>
-        /// Retrieves a user by their email address asynchronously.
-        /// Returns null if no user is found with the specified email.
+        /// Asynchronously retrieves a user by their email address.
+        /// Returns <c>null</c> if no user is found with the specified email.
         /// </summary>
         /// <param name="email">The email address of the user to retrieve.</param>
-        /// <returns>A Task containing the user if found; otherwise, null.</returns>
+        /// <returns>A <see cref="Task{User}"/> representing the asynchronous operation,
+        /// containing the user if found; otherwise, <c>null</c>.</returns>
         Task<User?> GetUserByEmailAsync(string email);
     }
 }

@@ -5,13 +5,13 @@ namespace ReservationSystemWebAPI.DataAccess
 {
     /// <summary>
     /// Represents the Entity Framework Core database context for the reservation system.
-    /// Provides access to all relevant entities and configures relationships and concurrency.
+    /// Provides access to entity sets and configures relationships, constraints, and concurrency behavior.
     /// </summary>
     public class ReservationDbContext : DbContext
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ReservationDbContext"/> class
-        /// with specified options.
+        /// using the specified options.
         /// </summary>
         /// <param name="options">The options to be used by the DbContext.</param>
         public ReservationDbContext(DbContextOptions<ReservationDbContext> options)
@@ -20,76 +20,74 @@ namespace ReservationSystemWebAPI.DataAccess
         }
 
         /// <summary>
-        /// Gets or sets the DbSet representing bookable equipment (storage items).
+        /// Gets or sets the entity set for bookable storage items (equipment).
         /// </summary>
         public DbSet<StorageItem> WEXO_DEPOT { get; set; }
 
         /// <summary>
-        /// Gets or sets the DbSet representing the reservation history records.
+        /// Gets or sets the entity set for reservation history records.
         /// </summary>
         public DbSet<ReservationHistory> ReservationHistory { get; set; }
 
         /// <summary>
-        /// Gets or sets the DbSet representing reservations.
+        /// Gets or sets the entity set for reservations.
         /// </summary>
         public DbSet<Reservation> Reservations { get; set; }
 
         /// <summary>
-        /// Gets or sets the DbSet representing individual reservation items.
+        /// Gets or sets the entity set for individual reservation items.
         /// </summary>
         public DbSet<ReservationItems> ReservationItems { get; set; }
 
         /// <summary>
-        /// Gets or sets the DbSet representing system users.
+        /// Gets or sets the entity set for system users.
         /// </summary>
         public DbSet<User> Users { get; set; }
 
         /// <summary>
-        /// Configures the entity relationships and properties on model creation.
-        /// Sets up cascade delete for reservation items and configures optimistic concurrency.
+        /// Configures entity mappings, relationships, constraints, and concurrency settings.
         /// </summary>
-        /// <param name="modelBuilder">The builder used to construct the model.</param>
+        /// <param name="modelBuilder">Provides a simple API for configuring entity types and relationships.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Configure Reservation
+            // Configure Reservation entity
             modelBuilder.Entity<Reservation>(entity =>
             {
                 // Relationships
                 entity.HasMany(r => r.Items)
-                    .WithOne(i => i.Reservation)
-                    .HasForeignKey(i => i.ReservationId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                      .WithOne(i => i.Reservation)
+                      .HasForeignKey(i => i.ReservationId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-                // Concurrency
+                // Concurrency token
                 entity.Property(r => r.RowVersion)
-                    .IsRowVersion();
+                      .IsRowVersion();
 
                 // Indexes
                 entity.HasIndex(r => r.Email);
                 entity.HasIndex(r => r.Status);
             });
 
-            // Configure ReservationItems
+            // Configure ReservationItems entity
             modelBuilder.Entity<ReservationItems>(entity =>
             {
-                // Concurrency
+                // Concurrency token
                 entity.Property(i => i.RowVersion)
-                    .IsRowVersion();
+                      .IsRowVersion();
 
                 // Indexes
                 entity.HasIndex(i => i.Equipment);
 
-                // Data types
+                // Field constraints
                 entity.Property(i => i.Equipment)
-                    .HasMaxLength(100);
+                      .HasMaxLength(100);
             });
 
-            // Configure ReservationHistory (if needed)
+            // Configure ReservationHistory entity
             modelBuilder.Entity<ReservationHistory>(entity =>
             {
                 entity.HasIndex(h => h.ReservationId);
             });
         }
-
     }
 }

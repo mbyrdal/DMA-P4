@@ -5,8 +5,8 @@ using System.Text.Json.Serialization;
 namespace ReservationSystemWebAPI.Models
 {
     /// <summary>
-    /// Represents a bookable equipment item stored in the inventory system.
-    /// This entity maps directly to the database and holds metadata about the equipment's location and quantity.
+    /// Represents a bookable equipment item in the inventory system.
+    /// Includes metadata such as storage location and available quantity.
     /// </summary>
     public class StorageItem
     {
@@ -16,36 +16,36 @@ namespace ReservationSystemWebAPI.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the equipment item.
+        /// Gets or sets the name or description of the equipment item.
         /// </summary>
         public string? Navn { get; set; }
 
         /// <summary>
-        /// Gets or sets the total quantity of this equipment item available for reservation.
+        /// Gets or sets the total quantity of this item available for reservation.
         /// </summary>
         public int Antal { get; set; }
 
         /// <summary>
-        /// Gets or sets the shelf (reol) where the equipment is stored.
+        /// Gets or sets the shelf (<c>Reol</c>) where the item is stored.
         /// </summary>
         public string? Reol { get; set; }
 
         /// <summary>
-        /// Gets or sets the level (hylde) of the shelf where the equipment is located.
+        /// Gets or sets the level (<c>Hylde</c>) of the shelf where the item is placed.
         /// </summary>
         public string? Hylde { get; set; }
 
         /// <summary>
-        /// Gets or sets the box (kasse) where the equipment is kept, if applicable.
+        /// Gets or sets the box (<c>Kasse</c>) containing the item, if applicable.
         /// </summary>
         public string? Kasse { get; set; }
 
         /// <summary>
-        /// Gets or sets the row version used for optimistic concurrency control (OCC).
-        /// This value is automatically managed by the database and should not be exposed in API responses.
+        /// Gets or sets the row version used for optimistic concurrency control.
+        /// This value is automatically maintained by the database and is excluded from API responses.
         /// </summary>
         [Timestamp]
-        [JsonIgnore] // Prevent accidental exposure in responses
+        [JsonIgnore]
         public byte[] RowVersion { get; set; } = null!;
     }
 }

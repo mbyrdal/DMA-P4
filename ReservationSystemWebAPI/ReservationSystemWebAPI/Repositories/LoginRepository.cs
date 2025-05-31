@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
 using ReservationSystemWebAPI.Models;
+using System.Threading.Tasks;
 
 namespace ReservationSystemWebAPI.Repositories
 {
     /// <summary>
-    /// Repository for handling user login data access.
+    /// Repository implementation for user login data access.
     /// Provides methods to query user information related to authentication.
     /// </summary>
     public class LoginRepository : ILoginRepository
@@ -22,14 +23,14 @@ namespace ReservationSystemWebAPI.Repositories
         }
 
         /// <summary>
-        /// Retrieves a user by their email address asynchronously.
-        /// Returns null if no user is found with the specified email.
+        /// Asynchronously retrieves a user by their email address.
+        /// Returns <c>null</c> if no user is found with the specified email.
         /// </summary>
         /// <param name="email">The email address of the user to retrieve.</param>
-        /// <returns>A Task containing the user if found; otherwise, null.</returns>
+        /// <returns>A <see cref="Task{User}"/> representing the asynchronous operation,
+        /// containing the user if found; otherwise, <c>null</c>.</returns>
         public async Task<User?> GetUserByEmailAsync(string email)
         {
-            // Query the Users DbSet for the first user matching the provided email
             return await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
     }

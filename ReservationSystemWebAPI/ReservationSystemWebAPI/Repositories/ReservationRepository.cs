@@ -19,29 +19,29 @@ namespace ReservationSystemWebAPI.Repositories
         /// <summary>
         /// Retrieves all reservations including their associated items asynchronously.
         /// </summary>
-        /// <returns>A collection of all reservations with items.</returns>
+        /// <returns>A collection of all reservations, each including its items.</returns>
         public async Task<IEnumerable<Reservation>> GetAllAsync()
         {
             return await _context.Reservations.Include(r => r.Items).ToListAsync();
         }
 
         /// <summary>
-        /// Retrieves a specific reservation by its ID, including its items asynchronously.
-        /// Returns null if not found.
+        /// Retrieves a specific reservation by its ID, including its items, asynchronously.
+        /// Returns null if the reservation is not found.
         /// </summary>
-        /// <param name="id">The ID of the reservation.</param>
-        /// <returns>The reservation with included items or null if not found.</returns>
+        /// <param name="id">The ID of the reservation to retrieve.</param>
+        /// <returns>The reservation with included items, or null if not found.</returns>
         public async Task<Reservation?> GetByIdAsync(int id)
         {
             return await _context.Reservations.Include(r => r.Items).FirstOrDefaultAsync(r => r.Id == id);
         }
 
         /// <summary>
-        /// Retrieves all reservations associated with a given user email asynchronously.
-        /// Includes reservation items.
+        /// Retrieves all reservations associated with the specified user email asynchronously.
+        /// Each reservation includes its items.
         /// </summary>
         /// <param name="email">The user's email address.</param>
-        /// <returns>A collection of reservations for the specified email.</returns>
+        /// <returns>A collection of reservations associated with the specified email.</returns>
         public async Task<IEnumerable<Reservation>> GetByUserEmailAsync(string email)
         {
             return await _context.Reservations
@@ -52,11 +52,11 @@ namespace ReservationSystemWebAPI.Repositories
 
         /// <summary>
         /// Creates a new reservation and decrements the inventory for each reserved item asynchronously.
-        /// Assumes reservation entity is fully built by service.
+        /// Assumes the reservation entity is fully constructed by the service.
         /// Throws <see cref="InvalidOperationException"/> if there is insufficient inventory for any item.
         /// </summary>
         /// <param name="reservation">The reservation entity to create.</param>
-        /// <returns>The created reservation.</returns>
+        /// <returns>The created reservation entity.</returns>
         public async Task<Reservation> CreateAsync(Reservation reservation)
         {
             // Decrement inventory counts for reserved items
@@ -79,14 +79,14 @@ namespace ReservationSystemWebAPI.Repositories
         /// Updates an existing reservation and its items asynchronously.
         /// Uses RowVersion concurrency tokens to detect conflicting updates.
         /// Returns:
-        /// -1 if concurrency conflict,
-        /// 0 if reservation not found,
-        /// otherwise number of affected rows.
-        /// Throws <see cref="ArgumentException"/> if concurrency tokens are missing.
+        /// -1 if a concurrency conflict occurs,
+        /// 0 if the reservation is not found,
+        /// otherwise the number of affected rows.
+        /// Throws <see cref="ArgumentException"/> if any concurrency tokens are missing.
         /// </summary>
-        /// <param name="id">The reservation ID to update.</param>
+        /// <param name="id">The ID of the reservation to update.</param>
         /// <param name="updatedReservation">The reservation entity with updated data and concurrency tokens.</param>
-        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
+        /// <returns>The number of affected rows or a status code indicating concurrency conflict or not found.</returns>
         public async Task<int> UpdateAsync(int id, Reservation updatedReservation)
         {
             if (updatedReservation.RowVersion == null)
@@ -143,15 +143,15 @@ namespace ReservationSystemWebAPI.Repositories
         }
 
         /// <summary>
-        /// Deletes a reservation and returns items to inventory asynchronously.
+        /// Deletes a reservation and returns reserved items to inventory asynchronously.
         /// Handles concurrency conflicts explicitly.
         /// Returns:
-        /// -1 if concurrency conflict,
-        /// 0 if reservation not found,
-        /// otherwise number of affected rows.
+        /// -1 if a concurrency conflict occurs,
+        /// 0 if the reservation is not found,
+        /// otherwise the number of affected rows.
         /// </summary>
-        /// <param name="id">The reservation ID to delete.</param>
-        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
+        /// <param name="id">The ID of the reservation to delete.</param>
+        /// <returns>The number of affected rows or a status code indicating concurrency conflict or not found.</returns>
         public async Task<int> DeleteAsync(int id)
         {
             var reservation = await _context.Reservations
@@ -196,12 +196,12 @@ namespace ReservationSystemWebAPI.Repositories
         /// Uses concurrency tokens to detect update conflicts.
         /// Sets the reservation status to "Inaktiv".
         /// Returns:
-        /// -1 if concurrency conflict,
-        /// 0 if reservation or items not found,
-        /// otherwise number of affected rows.
+        /// -1 if a concurrency conflict occurs,
+        /// 0 if the reservation or items are not found,
+        /// otherwise the number of affected rows.
         /// </summary>
-        /// <param name="reservationId">The reservation ID whose items are returned.</param>
-        /// <returns>The number of affected rows or status code for concurrency/not found.</returns>
+        /// <param name="reservationId">The ID of the reservation whose items are being returned.</param>
+        /// <returns>The number of affected rows or a status code indicating concurrency conflict or not found.</returns>
         public async Task<int> ReturnItemsAsync(int reservationId)
         {
             var reservation = await _context.Reservations
@@ -246,11 +246,12 @@ namespace ReservationSystemWebAPI.Repositories
         }
 
         /// <summary>
-        /// Creates a history record for a reservation asynchronously.
-        /// Returns 0 if reservation not found, otherwise number of affected rows.
+        /// Creates a history record for the specified reservation asynchronously.
+        /// Returns 0 if the reservation is not found,
+        /// otherwise the number of affected rows.
         /// </summary>
-        /// <param name="reservationId">The reservation ID for which to create history.</param>
-        /// <returns>The number of affected rows or 0 if reservation not found.</returns>
+        /// <param name="reservationId">The ID of the reservation for which to create history.</param>
+        /// <returns>The number of affected rows or 0 if the reservation is not found.</returns>
         public async Task<int> CreateHistoryAsync(int reservationId)
         {
             var reservation = await _context.Reservations

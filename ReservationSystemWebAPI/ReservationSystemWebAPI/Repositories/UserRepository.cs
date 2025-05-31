@@ -6,30 +6,46 @@ namespace ReservationSystemWebAPI.Repositories
 {
     /// <summary>
     /// Repository responsible for CRUD operations on the Users table.
-    /// Contains only data access logic; does not throw exceptions.
+    /// Handles optimistic concurrency via <c>RowVersion</c> concurrency tokens.
+    /// Throws exceptions on concurrency token absence or concurrency conflicts.
     /// </summary>
     public class UserRepository : IUserRepository
     {
         private readonly ReservationDbContext _dbContext;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UserRepository"/>.
+        /// </summary>
+        /// <param name="dbContext">The EF Core database context.</param>
         public UserRepository(ReservationDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Retrieves all users asynchronously.
+        /// </summary>
+        /// <returns>A collection of all <see cref="User"/> entities.</returns>
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _dbContext.Users.ToListAsync();
         }
 
+        /// <summary>
+        /// Retrieves a user by ID asynchronously.
+        /// </summary>
+        /// <param name="id">The user ID.</param>
+        /// <returns>The matching <see cref="User"/> if found; otherwise, <c>null</c>.</returns>
         public async Task<User?> GetByIdAsync(int id)
         {
             return await _dbContext.Users.FindAsync(id);
         }
 
         /// <summary>
-        /// Adds a new user and returns the number of affected rows.
+        /// Adds a new user asynchronously.
         /// </summary>
+        /// <param name="user">The <see cref="User"/> entity to add.</param>
+        /// <returns>The number of affected rows, typically 1 if successful.</returns>
         public async Task<int> AddAsync(User user)
         {
             await _dbContext.Users.AddAsync(user);
@@ -37,61 +53,65 @@ namespace ReservationSystemWebAPI.Repositories
         }
 
         /// <summary>
-        /// Updates an existing user by attaching the entity and marking as modified.
-        /// Returns the number of affected rows.
+        /// Updates an existing user asynchronously using optimistic concurrency control.
+        /// Requires a valid <c>RowVersion</c> concurrency token.
         /// </summary>
+        /// <param name="user">The <see cref="User"/> entity with updated data and original concurrency token.</param>
+        /// <returns>The number of affected rows, typically 1 if successful.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if <c>RowVersion</c> is <c>null</c>.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict occurs.</exception>
         public async Task<int> UpdateAsync(User user)
         {
-            // Attach user entity to context
+            // Attach the user entity to the context to track changes
             _dbContext.Users.Attach(user);
 
-            // Tell EF this entity is modified
-            // This is necessary to ensure that EF tracks changes to the entity
+            // Mark entity as modified
             _dbContext.Entry(user).State = EntityState.Modified;
 
-            // Set original RowVersion for concurrency check
-            if(user.RowVersion == null)
-            {
-                // If RowVersion is null, we cannot perform concurrency checks
-                throw new InvalidOperationException("Manglende concurrency token (RowVersion) for update.");
-            }
+            // Verify concurrency token presence
+            if (user.RowVersion == null)
+                throw new InvalidOperationException("Missing concurrency token (RowVersion) for update.");
 
+            // Set original RowVersion for concurrency check
             _dbContext.Entry(user).OriginalValues["RowVersion"] = user.RowVersion;
 
-            // Save changes will throw DbUpdateConcurrencyException if RowVersion does not match (concurrency conflict)
+            // Save changes; may throw DbUpdateConcurrencyException if concurrency conflict detected
             return await _dbContext.SaveChangesAsync();
         }
 
         /// <summary>
-        /// Deletes the user by id.
-        /// Returns:
-        /// - Number of affected rows if deleted
-        /// - 0 if user not found
+        /// Deletes a user by ID asynchronously using optimistic concurrency control.
+        /// Requires the original <c>RowVersion</c> concurrency token.
         /// </summary>
+        /// <param name="id">The user ID to delete.</param>
+        /// <param name="rowVersion">The original concurrency token.</param>
+        /// <returns>The number of affected rows if deleted, or 0 if user not found.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if <c>RowVersion</c> is <c>null</c>.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict occurs.</exception>
         public async Task<int> DeleteAsync(int id, byte[] rowVersion)
         {
-            if(rowVersion == null)
-            {
-                throw new InvalidOperationException("Manglende concurrency token (RowVersion) for delete.");
-            }
+            if (rowVersion == null)
+                throw new InvalidOperationException("Missing concurrency token (RowVersion) for delete.");
 
-            // Create a stub user with just Id and RowVersion
-            // No need to fetch entire user entity from database
-            // DELETE FROM Users WHERE Id = @id AND RowVersion = @rowVersion
+            // Create a stub user entity with ID and concurrency token to delete without fetching
             var userToDelete = new User
             {
                 Id = id,
                 RowVersion = rowVersion
             };
 
-            // Attach User with RowVersion for concurrency check
+            // Attach stub entity with concurrency token and mark as deleted
             _dbContext.Entry(userToDelete).State = EntityState.Deleted;
             _dbContext.Entry(userToDelete).OriginalValues["RowVersion"] = rowVersion;
-
 
             return await _dbContext.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Checks asynchronously whether a user with the specified ID exists.
+        /// </summary>
+        /// <param name="id">The user ID to check.</param>
+        /// <returns><c>true</c> if a user with the given ID exists; otherwise, <c>false</c>.</returns>
         public async Task<bool> ExistsAsync(int id)
         {
             return await _dbContext.Users.AnyAsync(u => u.Id == id);
