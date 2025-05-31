@@ -10,17 +10,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ReservationSystemWebAPI.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for the <see cref="UserService"/> class using mocked dependencies.
+    /// </summary>
     public class UserServiceTests
     {
         private readonly Mock<IUserRepository> _mockRepo;
         private readonly UserService _service;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserServiceTests"/> class.
+        /// </summary>
         public UserServiceTests()
         {
             _mockRepo = new Mock<IUserRepository>();
             _service = new UserService(_mockRepo.Object);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.GetAllAsync"/> returns a list of users.
+        /// </summary>
         [Fact]
         public async Task GetAllAsync_ReturnsUsers()
         {
@@ -33,6 +42,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Single(result);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.GetAllAsync"/> throws an exception when the list is empty.
+        /// </summary>
         [Fact]
         public async Task GetAllAsync_WhenEmpty_ThrowsInvalidOperationException()
         {
@@ -41,6 +53,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetAllAsync());
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.GetByIdAsync"/> returns a user when found.
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_UserExists_ReturnsUser()
         {
@@ -53,6 +68,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal("test@wexo.dk", result.Email);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.GetByIdAsync"/> throws when the user is not found.
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
@@ -61,6 +79,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByIdAsync(1));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.AddAsync"/> returns affected rows when the user is valid.
+        /// </summary>
         [Fact]
         public async Task AddAsync_ValidUser_ReturnsAffectedRows()
         {
@@ -72,6 +93,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal(1, result);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.AddAsync"/> throws for invalid email input.
+        /// </summary>
         [Fact]
         public async Task AddAsync_InvalidEmail_ThrowsArgumentException()
         {
@@ -80,6 +104,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             await Assert.ThrowsAsync<ArgumentException>(() => _service.AddAsync(newUser));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.UpdateAsync"/> returns affected rows for a valid user.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_UserExists_ReturnsAffectedRows()
         {
@@ -92,6 +119,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal(1, result);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.UpdateAsync"/> throws when user does not exist.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
@@ -101,6 +131,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateAsync(user));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.DeleteAsync"/> returns affected rows for valid input.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_ValidInput_ReturnsAffectedRows()
         {
@@ -115,13 +148,24 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal(1, result);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.DeleteAsync"/> throws for invalid Base64 RowVersion.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_InvalidRowVersion_ThrowsArgumentException()
         {
+            int id = 1;
+            string invalidRowVersion = "NotBase64";
+
+            _mockRepo.Setup(r => r.ExistsAsync(id)).ReturnsAsync(true);
+
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                _service.DeleteAsync(1, "NotBase64"));
+                _service.DeleteAsync(id, invalidRowVersion));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.DeleteAsync"/> throws when a concurrency conflict occurs.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_ConcurrencyConflict_ThrowsInvalidOperationException()
         {
@@ -136,6 +180,9 @@ namespace ReservationSystemWebAPI.Tests.Services
                 _service.DeleteAsync(id, rowVersion));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="UserService.DeleteAsync"/> throws when the user does not exist.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_UserNotFound_ThrowsKeyNotFoundException()
         {

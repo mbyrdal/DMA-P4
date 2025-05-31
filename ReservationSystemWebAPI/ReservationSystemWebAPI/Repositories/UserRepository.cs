@@ -85,25 +85,26 @@ namespace ReservationSystemWebAPI.Repositories
         /// </summary>
         /// <param name="id">The user ID to delete.</param>
         /// <param name="rowVersion">The original concurrency token.</param>
-        /// <returns>The number of affected rows if deleted, or 0 if user not found.</returns>
+        /// <returns>The number of affected rows if deleted, or 0 if user not found or token mismatch.</returns>
         /// <exception cref="InvalidOperationException">Thrown if <c>RowVersion</c> is <c>null</c>.</exception>
-        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict occurs.</exception>
         public async Task<int> DeleteAsync(int id, byte[] rowVersion)
         {
             if (rowVersion == null)
                 throw new InvalidOperationException("Missing concurrency token (RowVersion) for delete.");
 
-            // Create a stub user entity with ID and concurrency token to delete without fetching
-            var userToDelete = new User
-            {
-                Id = id,
-                RowVersion = rowVersion
-            };
+            // Retrieve the user entity from the database to ensure correct tracking and concurrency resolution
+            var user = await _dbContext.Users.FindAsync(id);
+            if (user == null)
+                return 0;
 
-            // Attach stub entity with concurrency token and mark as deleted
-            _dbContext.Entry(userToDelete).State = EntityState.Deleted;
-            _dbContext.Entry(userToDelete).OriginalValues["RowVersion"] = rowVersion;
+            // Compare the provided RowVersion with the one in the database
+            if (!user.RowVersion.SequenceEqual(rowVersion))
+                return 0;
 
+            // Mark the entity for deletion
+            _dbContext.Users.Remove(user);
+
+            // Attempt to save changes and return the number of affected rows
             return await _dbContext.SaveChangesAsync();
         }
 

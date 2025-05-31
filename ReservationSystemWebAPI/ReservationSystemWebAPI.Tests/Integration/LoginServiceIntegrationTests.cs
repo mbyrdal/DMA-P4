@@ -9,10 +9,18 @@ using Xunit;
 
 namespace ReservationSystemWebAPI.Tests.Integration
 {
+    /// <summary>
+    /// Integration tests for <see cref="LoginService"/> using a real database connection.
+    /// Validates user authentication logic against actual persisted data.
+    /// </summary>
     public class LoginServiceIntegrationTests
     {
         private readonly ILoginService _loginService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoginServiceIntegrationTests"/> class.
+        /// Sets up the service provider and resolves dependencies via <see cref="ServiceCollection"/>.
+        /// </summary>
         public LoginServiceIntegrationTests()
         {
             var services = new ServiceCollection();
@@ -27,10 +35,13 @@ namespace ReservationSystemWebAPI.Tests.Integration
             _loginService = provider.GetRequiredService<ILoginService>();
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ILoginService.AuthenticateUserAsync(string, string)"/> returns a user
+        /// when valid credentials are provided.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_ValidCredentials_ReturnsUser()
         {
-            // Husk: Brugeren skal findes i databasen
             var email = "tommy@wexo.dk";
             var password = "admin1234";
 
@@ -40,6 +51,10 @@ namespace ReservationSystemWebAPI.Tests.Integration
             Assert.Equal(email, user.Email);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ILoginService.AuthenticateUserAsync(string, string)"/> throws
+        /// <see cref="UnauthorizedAccessException"/> when the password is incorrect.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_InvalidPassword_ThrowsUnauthorizedAccessException()
         {
@@ -50,6 +65,10 @@ namespace ReservationSystemWebAPI.Tests.Integration
                 _loginService.AuthenticateUserAsync(email, wrongPassword));
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ILoginService.AuthenticateUserAsync(string, string)"/> throws
+        /// <see cref="KeyNotFoundException"/> when the email does not exist.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_UnknownEmail_ThrowsKeyNotFoundException()
         {

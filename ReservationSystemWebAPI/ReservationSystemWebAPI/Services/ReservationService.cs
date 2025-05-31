@@ -92,7 +92,7 @@ namespace ReservationSystemWebAPI.Services
             var createdReservation = await _repository.CreateAsync(reservation);
 
             if (createdReservation == null)
-                throw new ArgumentException("Reservation kunne ikke oprettes. Tjek venligst at alle data er korrekte og prøv igen.");
+                throw new InvalidOperationException("Reservation kunne ikke oprettes. Tjek venligst at alle data er korrekte og prøv igen.");
 
             return createdReservation;
         }

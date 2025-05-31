@@ -7,17 +7,27 @@ using ReservationSystemWebAPI.Models;
 
 namespace ReservationSystemWebAPI.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for the <see cref="LoginService"/> class.
+    /// Verifies authentication logic using mocked dependencies.
+    /// </summary>
     public class LoginServiceTests
     {
         private readonly Mock<ILoginRepository> _mockRepo;
         private readonly LoginService _service;
 
+        /// <summary>
+        /// Initializes the test suite with a mocked <see cref="ILoginRepository"/>.
+        /// </summary>
         public LoginServiceTests()
         {
             _mockRepo = new Mock<ILoginRepository>();
             _service = new LoginService(_mockRepo.Object);
         }
 
+        /// <summary>
+        /// Ensures a valid email and password returns the correct user.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_ValidCredentials_ReturnsUser()
         {
@@ -43,6 +53,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal(email, result.Email);
         }
 
+        /// <summary>
+        /// Ensures an exception is thrown if the user does not exist.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_UserNotFound_ThrowsKeyNotFoundException()
         {
@@ -56,6 +69,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AuthenticateUserAsync(email, password));
         }
 
+        /// <summary>
+        /// Ensures an exception is thrown if the password is incorrect.
+        /// </summary>
         [Fact]
         public async Task AuthenticateUserAsync_WrongPassword_ThrowsUnauthorizedAccessException()
         {

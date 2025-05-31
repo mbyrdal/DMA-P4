@@ -11,17 +11,26 @@ using System;
 
 namespace ReservationSystemWebAPI.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for the <see cref="ReservationService"/> class using mocked dependencies.
+    /// </summary>
     public class ReservationServiceTests
     {
         private readonly Mock<IReservationRepository> _mockRepo;
         private readonly ReservationService _service;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReservationServiceTests"/> class with mocked repository.
+        /// </summary>
         public ReservationServiceTests()
         {
             _mockRepo = new Mock<IReservationRepository>();
             _service = new ReservationService(_mockRepo.Object);
         }
 
+        /// <summary>
+        /// Ensures a valid reservation DTO is correctly processed and returned.
+        /// </summary>
         [Fact]
         public async Task CreateAsync_ValidDto_ReturnsReservation()
         {
@@ -54,20 +63,23 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.Equal(dto.Email, result.Email);
         }
 
+        /// <summary>
+        /// Ensures an invalid DTO triggers an exception during reservation creation.
+        /// </summary>
         [Fact]
-        public async Task CreateAsync_InvalidDto_ThrowsArgumentException()
+        public async Task CreateAsync_InvalidDto_ThrowsInvalidOperationException()
         {
-            // Arrange
             var invalidDto = new ReservationCreateDto();
 
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => _service.CreateAsync(invalidDto));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateAsync(invalidDto));
         }
 
+        /// <summary>
+        /// Ensures null result from repository during reservation creation throws an exception.
+        /// </summary>
         [Fact]
         public async Task CreateAsync_RepoReturnsNull_ThrowsException()
         {
-            // Arrange
             var dto = new ReservationCreateDto
             {
                 Email = "test@wexo.dk",
@@ -77,15 +89,16 @@ namespace ReservationSystemWebAPI.Tests.Services
                 }
             };
 
-            // Even though the method shouldn't return null, simulate it anyway (force null)
             _mockRepo
                 .Setup(r => r.CreateAsync(It.IsAny<Reservation>()))
-                .ReturnsAsync((Reservation)null!); // null-forced on non-nullable
+                .ReturnsAsync((Reservation)null!);
 
-            // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateAsync(dto));
         }
 
+        /// <summary>
+        /// Ensures successful item return updates the reservation and returns true.
+        /// </summary>
         [Fact]
         public async Task ReturnItemsAsync_Success_ReturnsTrue()
         {
@@ -97,6 +110,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Ensures item return fails when reservation is not found.
+        /// </summary>
         [Fact]
         public async Task ReturnItemsAsync_NotFound_ThrowsException()
         {
@@ -108,6 +124,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             );
         }
 
+        /// <summary>
+        /// Ensures concurrency conflict during item return throws a concurrency exception.
+        /// </summary>
         [Fact]
         public async Task ReturnItemsAsync_ConcurrencyConflict_ThrowsException()
         {
@@ -119,6 +138,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             );
         }
 
+        /// <summary>
+        /// Ensures a valid reservation ID results in a successful delete.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_Success_ReturnsTrue()
         {
@@ -130,6 +152,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Ensures deleting a non-existent reservation throws an exception.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_NotFound_ThrowsException()
         {
@@ -141,10 +166,50 @@ namespace ReservationSystemWebAPI.Tests.Services
             );
         }
 
+        /// <summary>
+        /// Ensures a valid update changes the reservation as expected.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_Success_ReturnsTrue()
         {
-            var dto = new ReservationUpdateDto { RowVersion = Convert.ToBase64String(new byte[8]) };
+            var dto = new ReservationUpdateDto
+            {
+                Email = "test@wexo.dk",
+                RowVersion = Convert.ToBase64String(new byte[8]),
+                Items = new List<ReservationItemUpdateDto>
+                {
+                    new ReservationItemUpdateDto
+                    {
+                        Id = 1,
+                        Equipment = "HDMI-kabel",
+                        Quantity = 1,
+                        IsReturned = false,
+                        RowVersion = Convert.ToBase64String(new byte[8])
+                    }
+                }
+            };
+
+            _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Reservation
+            {
+                Id = 1,
+                Email = "test@wexo.dk",
+                Status = "Aktiv",
+                CreatedAt = DateTime.Now,
+                IsCollected = false,
+                RowVersion = new byte[8],
+                Items = new List<ReservationItems>
+                {
+                    new ReservationItems
+                    {
+                        Id = 1,
+                        Equipment = "HDMI-kabel",
+                        Quantity = 1,
+                        IsReturned = false,
+                        RowVersion = new byte[8]
+                    }
+                }
+            });
+
             _mockRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Reservation>())).ReturnsAsync(1);
 
             var result = await _service.UpdateAsync(1, dto);
@@ -152,6 +217,9 @@ namespace ReservationSystemWebAPI.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Ensures update fails when the reservation is not found.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_NotFound_ThrowsException()
         {
@@ -162,10 +230,50 @@ namespace ReservationSystemWebAPI.Tests.Services
                 _service.UpdateAsync(1, dto));
         }
 
+        /// <summary>
+        /// Ensures update fails with a concurrency exception when version conflict occurs.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_ConcurrencyConflict_ThrowsException()
         {
-            var dto = new ReservationUpdateDto { RowVersion = Convert.ToBase64String(new byte[8]) };
+            var dto = new ReservationUpdateDto
+            {
+                Email = "test@wexo.dk",
+                RowVersion = Convert.ToBase64String(new byte[8]),
+                Items = new List<ReservationItemUpdateDto>
+                {
+                    new ReservationItemUpdateDto
+                    {
+                        Id = 1,
+                        Equipment = "HDMI-kabel",
+                        Quantity = 1,
+                        IsReturned = false,
+                        RowVersion = Convert.ToBase64String(new byte[8])
+                    }
+                }
+            };
+
+            _mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Reservation
+            {
+                Id = 1,
+                Email = "test@wexo.dk",
+                Status = "Aktiv",
+                CreatedAt = DateTime.Now,
+                IsCollected = false,
+                RowVersion = new byte[8],
+                Items = new List<ReservationItems>
+                {
+                    new ReservationItems
+                    {
+                        Id = 1,
+                        Equipment = "HDMI-kabel",
+                        Quantity = 1,
+                        IsReturned = false,
+                        RowVersion = new byte[8]
+                    }
+                }
+            });
+
             _mockRepo.Setup(r => r.UpdateAsync(1, It.IsAny<Reservation>())).ReturnsAsync(-1);
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>

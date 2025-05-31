@@ -12,11 +12,18 @@ using Xunit;
 
 namespace ReservationSystemWebAPI.Tests.Integration
 {
+    /// <summary>
+    /// Integration tests for <see cref="ReservationService"/> with a real database.
+    /// Covers creation, retrieval, updating, return handling, and deletion of reservations.
+    /// </summary>
     public class ReservationServiceIntegrationTests
     {
         private readonly IReservationService _reservationService;
         private readonly ReservationDbContext _context;
 
+        /// <summary>
+        /// Initializes dependencies using a real database connection and resolves services.
+        /// </summary>
         public ReservationServiceIntegrationTests()
         {
             var services = new ServiceCollection();
@@ -32,6 +39,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             _context = provider.GetRequiredService<ReservationDbContext>();
         }
 
+        /// <summary>
+        /// Ensures a reservation can be created using valid input and then deleted successfully.
+        /// </summary>
         [Fact]
         public async Task CreateAsync_ValidDto_CreatesReservation()
         {
@@ -53,6 +63,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(reservation.Id);
         }
 
+        /// <summary>
+        /// Ensures that created reservations appear in the list returned by <c>GetAllAsync</c>.
+        /// </summary>
         [Fact]
         public async Task GetAllAsync_ReturnsReservations()
         {
@@ -74,6 +87,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(created.Id);
         }
 
+        /// <summary>
+        /// Verifies that a reservation can be retrieved by its ID.
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_ValidId_ReturnsCorrectReservation()
         {
@@ -96,6 +112,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(created.Id);
         }
 
+        /// <summary>
+        /// Ensures that a reservation can be fetched by user email.
+        /// </summary>
         [Fact]
         public async Task GetByUserEmailAsync_ReturnsUserReservations()
         {
@@ -119,6 +138,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(created.Id);
         }
 
+        /// <summary>
+        /// Ensures that a reservation's status can be updated and saved correctly.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_ValidInput_UpdatesStatus()
         {
@@ -150,6 +172,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(created.Id);
         }
 
+        /// <summary>
+        /// Ensures that all reservation items can be marked as returned and status is updated accordingly.
+        /// </summary>
         [Fact]
         public async Task ReturnItemsAsync_ValidReservation_ReturnsAllItems()
         {
@@ -174,6 +199,9 @@ namespace ReservationSystemWebAPI.Tests.Integration
             await _reservationService.DeleteAsync(created.Id);
         }
 
+        /// <summary>
+        /// Ensures that a reservation can be deleted and is no longer retrievable.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_ValidId_DeletesReservation()
         {
