@@ -11,57 +11,65 @@ namespace ReservationSystemWebAPI.Services
         /// <summary>
         /// Retrieves all reservations asynchronously.
         /// </summary>
-        /// <returns>A collection of all reservations.</returns>
+        /// <returns>A task that represents the asynchronous operation. 
+        /// The task result contains a collection of all reservations.</returns>
         Task<IEnumerable<Reservation>> GetAllAsync();
 
         /// <summary>
-        /// Retrieves a reservation by its unique ID asynchronously.
+        /// Retrieves a reservation by its unique identifier asynchronously.
         /// </summary>
-        /// <param name="id">The reservation ID.</param>
-        /// <returns>The reservation if found; otherwise, null.</returns>
+        /// <param name="id">The unique identifier of the reservation.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result contains the reservation if found; otherwise, null.</returns>
         Task<Reservation?> GetByIdAsync(int id);
 
         /// <summary>
-        /// Retrieves reservations for a specified user email asynchronously.
+        /// Retrieves all reservations associated with a specific user's email asynchronously.
         /// </summary>
-        /// <param name="email">The user's email.</param>
-        /// <returns>A collection of reservations for the user.</returns>
+        /// <param name="email">The email address of the user.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result contains a collection of reservations for the specified user.</returns>
         Task<IEnumerable<Reservation>> GetByUserEmailAsync(string email);
 
         /// <summary>
         /// Creates a new reservation asynchronously.
         /// </summary>
-        /// <param name="dto">Data transfer object containing reservation details.</param>
-        /// <returns>The created reservation entity.</returns>
+        /// <param name="dto">The data transfer object containing details for the new reservation.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result contains the newly created reservation entity.</returns>
         Task<Reservation> CreateAsync(ReservationCreateDto dto);
 
         /// <summary>
         /// Updates an existing reservation asynchronously.
         /// </summary>
-        /// <param name="id">The ID of the reservation to update.</param>
-        /// <param name="dto">Data transfer object containing update details.</param>
-        /// <returns>True if the update was successful; otherwise, false.</returns>
+        /// <param name="id">The identifier of the reservation to update.</param>
+        /// <param name="dto">The data transfer object containing updated reservation details.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result is true if the update was successful; otherwise, false.</returns>
         Task<bool> UpdateAsync(int id, ReservationUpdateDto dto);
 
         /// <summary>
-        /// Deletes a reservation by ID asynchronously.
+        /// Deletes a reservation by its unique identifier asynchronously.
         /// </summary>
-        /// <param name="id">The ID of the reservation to delete.</param>
-        /// <returns>True if the deletion was successful; otherwise, false.</returns>
+        /// <param name="id">The identifier of the reservation to delete.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result is true if the deletion was successful; otherwise, false.</returns>
         Task<bool> DeleteAsync(int id);
 
         /// <summary>
-        /// Marks all items in a reservation as returned and updates inventory accordingly asynchronously.
+        /// Marks all items in a reservation as returned and updates inventory asynchronously.
         /// </summary>
-        /// <param name="reservationId">The reservation ID.</param>
-        /// <returns>True if the operation was successful; otherwise, false.</returns>
+        /// <param name="reservationId">The identifier of the reservation whose items should be returned.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result is true if the operation was successful; otherwise, false.</returns>
         Task<bool> ReturnItemsAsync(int reservationId);
 
         /// <summary>
-        /// Creates a history record for the reservation asynchronously.
+        /// Creates a history record for a specific reservation asynchronously.
         /// </summary>
-        /// <param name="reservationId">The reservation ID.</param>
-        /// <returns>True if the history record was created successfully; otherwise, false.</returns>
+        /// <param name="reservationId">The identifier of the reservation to record history for.</param>
+        /// <returns>A task that represents the asynchronous operation.
+        /// The task result is true if the history record was created successfully; otherwise, false.</returns>
         Task<bool> CreateHistoryAsync(int reservationId);
     }
 }

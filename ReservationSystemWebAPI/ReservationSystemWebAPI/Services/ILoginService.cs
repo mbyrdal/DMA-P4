@@ -8,13 +8,19 @@ namespace ReservationSystemWebAPI.Services
     public interface ILoginService
     {
         /// <summary>
-        /// Authenticates a user by verifying email and password.
+        /// Authenticates a user by verifying their email and plaintext password.
         /// </summary>
         /// <param name="email">The user's email address.</param>
         /// <param name="password">The user's plaintext password.</param>
-        /// <returns>The authenticated <see cref="User"/> if credentials are valid.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown if no user is found with the specified email.</exception>
-        /// <exception cref="UnauthorizedAccessException">Thrown if the password is incorrect.</exception>
+        /// <returns>
+        /// The authenticated <see cref="User"/> if the credentials are valid.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown if no user is found with the specified email.
+        /// </exception>
+        /// <exception cref="UnauthorizedAccessException">
+        /// Thrown if the password verification fails.
+        /// </exception>
         Task<User> AuthenticateUserAsync(string email, string password);
     }
 }

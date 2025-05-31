@@ -20,7 +20,8 @@ namespace ReservationSystemWebAPI.Services
         }
 
         /// <summary>
-        /// Authenticates a user by verifying the provided email and password.
+        /// Authenticates a user by verifying the provided email and plaintext password.
+        /// Throws exceptions if user not found or password is incorrect.
         /// </summary>
         /// <param name="email">The user's email address.</param>
         /// <param name="password">The user's plaintext password.</param>
@@ -33,13 +34,13 @@ namespace ReservationSystemWebAPI.Services
 
             if (user == null)
             {
-                throw new KeyNotFoundException($"Bruger ikke fundet med e-mail: {email}");
+                throw new KeyNotFoundException($"User not found with email: {email}");
             }
 
             bool passwordMatch = BCrypt.Net.BCrypt.Verify(password, user.Password);
             if (!passwordMatch)
             {
-                throw new UnauthorizedAccessException("Forkert adgangskode.");
+                throw new UnauthorizedAccessException("Incorrect password.");
             }
 
             return user;
