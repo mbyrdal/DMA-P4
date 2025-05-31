@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservationSystemWebAPI.DataAccess;
+using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Services;
 
@@ -70,7 +71,7 @@ namespace ReservationSystemWebAPI.Controllers
         /// <param name="newItem">Den nye genstand der skal tilføjes.</param>
         /// <returns>Statuskode og oprettet genstand.</returns>
         [HttpPost]
-        public async Task<ActionResult<StorageItem>> CreateItem([FromBody] StorageItem newItem)
+        public async Task<ActionResult<StorageItem>> CreateItem([FromBody] StorageItemCreateDto newItem)
         {
             try
             {
@@ -97,29 +98,29 @@ namespace ReservationSystemWebAPI.Controllers
         /// <param name="updatedItem">De nye data for genstanden, inkl. RowVersion for concurrency.</param>
         /// <returns>Statuskode afhængigt af resultatet.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItem updatedItem)
+        public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItemUpdateDto dto)
         {
-            if (id != updatedItem.Id)
+            if(id != dto.Id)
             {
-                return BadRequest(new { message = "Mismatch på ID'er" });
+                return BadRequest(new { message = "ID i URL matcher ikke ID i data" });
             }
 
             try
             {
-                await _storageItemService.UpdateItemAsync(updatedItem);
+                await _storageItemService.UpdateItemAsync(dto);
                 return NoContent(); // Status 204 if success
             }
-            catch (DbUpdateConcurrencyException)
+            catch(DbUpdateConcurrencyException)
             {
-                // Status 409 if concurrency conflict occurs
-                return Conflict(new
-                {
-                    message = "Opdatering mislykkedes, da en anden bruger har lavet ændringer. Genindlæs data og prøv igen."
-                });
+                return Conflict(new { message = "Opdatering mislykkedes, da en anden bruger har lavet ændringer. Genindlæs data og prøv igen." });
             }
-            catch (KeyNotFoundException ex)
+            catch(KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (FormatException)
+            {
+                return BadRequest(new { message = "Ugyldig RowVersion format. Skal være Base64-kodet." });
             }
             catch (Exception ex)
             {

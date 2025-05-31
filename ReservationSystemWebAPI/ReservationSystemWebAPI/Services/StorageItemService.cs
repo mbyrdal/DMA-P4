@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ReservationSystemWebAPI.DTOs;
 using ReservationSystemWebAPI.Models;
 using ReservationSystemWebAPI.Repositories;
 
@@ -56,7 +57,7 @@ namespace ReservationSystemWebAPI.Services
         /// Tilføjer nyt udstyr til lageret asynkront.
         /// </summary>
         /// <param name="storageItem">Udstyr (StorageItem) objekt, som skal tilføjes.</param>
-        public async Task AddItemAsync(StorageItem storageItem)
+        public async Task AddItemAsync(StorageItemCreateDto storageItem)
         {
 
             if(storageItem == null)
@@ -66,12 +67,24 @@ namespace ReservationSystemWebAPI.Services
 
             if (string.IsNullOrWhiteSpace(storageItem.Navn))
             {
-                throw new ArgumentException("Navnet på udstyret er påkrævet. ", nameof(storageItem.Navn));
+                throw new ArgumentException("Navnet på udstyret er påkrævet. Tjek venglist efter whitespace, mellemrum osv.", nameof(storageItem.Navn));
             }
+
+            // Map DTO to StorageItem model
+            var storageItemDtoMapper = new StorageItem
+            {
+                Id = storageItem.Id,
+                Navn = storageItem.Navn,
+                Antal = storageItem.Antal,
+                Reol = storageItem.Reol,
+                Hylde = storageItem.Hylde,
+                Kasse = storageItem.Kasse,
+                RowVersion = new byte[8] // Initialize with a default value, EF will populate this on insert
+            };
 
             try
             {
-                await _storageItemAccessPoint.AddAsync(storageItem);
+                await _storageItemAccessPoint.AddAsync(storageItemDtoMapper);
             }
             catch (Exception ex)
             {
@@ -84,24 +97,31 @@ namespace ReservationSystemWebAPI.Services
         /// Opdaterer eksisterende ustyr i lageret asynkront.
         /// </summary>
         /// <param name="storageItem">Eksisterende udstyr (StorageItem) objekt, som skal opdateres.</param>
-        public async Task UpdateItemAsync(StorageItem storageItem)
+        public async Task UpdateItemAsync(StorageItemUpdateDto dto)
         {
-            var itemExists = await _storageItemAccessPoint.ExistsAsync(storageItem.Id);
-
-            if(!itemExists)
+            var itemExists = await _storageItemAccessPoint.ExistsAsync(dto.Id);
+            if (!itemExists)
             {
-                throw new KeyNotFoundException($"Kan ikke opdatere udstyret med ID {storageItem.Id}. Udstyret {storageItem.Navn} findes ikke.");
+                throw new KeyNotFoundException($"Kan ikke opdatere udstyret med ID {dto.Id}. Udstyret findes ikke.");
             }
+
+            var storageItemDtoMapper = new StorageItem
+            {
+                Id = dto.Id,
+                Navn = dto.Navn,
+                Antal = dto.Antal,
+                Reol = dto.Reol,
+                Hylde = dto.Hylde,
+                Kasse = dto.Kasse,
+                RowVersion = Convert.FromBase64String(dto.RowVersion) // Convert base64 string to byte array
+            };
 
             try
             {
-                await _storageItemAccessPoint.UpdateAsync(storageItem);
+                await _storageItemAccessPoint.UpdateAsync(storageItemDtoMapper);
             }
-
-            // The RowVersion concurrency token is checked; if it doesn't match the DB, a DbUpdateConcurrencyException is thrown.
-            catch (DbUpdateConcurrencyException)
+            catch(DbUpdateConcurrencyException ex)
             {
-                // Handle concurrency conflict
                 throw new InvalidOperationException("Opdatering mislykkedes, fordi en anden bruger har ændret på lageret siden da. Refresh og prøv igen.");
             }
             catch(Exception ex)
@@ -109,6 +129,7 @@ namespace ReservationSystemWebAPI.Services
                 throw new InvalidOperationException("Der opstod en fejl under opdatering af udstyr i lageret. " +
                                                     "Tjek venligst forbindelsen til databasen og prøv igen.", ex);
             }
+
         }
 
         /// <summary>

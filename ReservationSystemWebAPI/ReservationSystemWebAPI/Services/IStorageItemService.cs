@@ -1,4 +1,5 @@
-﻿using ReservationSystemWebAPI.Models;
+﻿using ReservationSystemWebAPI.DTOs;
+using ReservationSystemWebAPI.Models;
 
 namespace ReservationSystemWebAPI.Services
 {
@@ -6,8 +7,8 @@ namespace ReservationSystemWebAPI.Services
     {
         Task<IEnumerable<StorageItem>> GetAllItemsAsync();
         Task<StorageItem> GetItemByIdAsync(int id);
-        Task AddItemAsync(StorageItem newItem);
-        Task UpdateItemAsync(StorageItem updatedItem);
+        Task AddItemAsync(StorageItemCreateDto newItem);
+        Task UpdateItemAsync(StorageItemUpdateDto updatedItem);
         Task DeleteItemAsync(int id);
     }
 }
