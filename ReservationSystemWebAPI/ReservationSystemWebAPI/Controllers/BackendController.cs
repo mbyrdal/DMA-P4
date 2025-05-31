@@ -9,10 +9,10 @@ using ReservationSystemWebAPI.Services;
 namespace ReservationSystemWebAPI.Controllers
 {
     /// <summary>
-    /// Controller til håndtering af CRUD-operationer på udstyr (StorageItem) i databasen.<br/>
-    /// Denne controller modtager HTTP-forespørgsler og videresender dem til <see cref="IStorageItemService"/>,
-    /// som håndterer den egentlige forretningslogik og dataadgang via repositorylaget.<br/>
-    /// Alle metoder er asynkrone og returnerer relevante HTTP-statuskoder.
+    /// Controller responsible for handling CRUD operations on StorageItem entities.
+    /// Receives HTTP requests and forwards them to the <see cref="IStorageItemService"/>,
+    /// which manages business logic and data access through the repository layer.
+    /// All methods are asynchronous and return appropriate HTTP status codes.
     /// </summary>
     [Authorize]
     [Route("api/[controller]")]
@@ -23,18 +23,17 @@ namespace ReservationSystemWebAPI.Controllers
 
         public BackendController(IStorageItemService storageItemService)
         {
-            // Use DI to instantiate and make use of the existing ReservationDbContext.
-            // ReservationDbContext contains the DbSet<StorageItem> StorageItem property (access to the database).
+            // Dependency Injection of service layer that encapsulates business logic and data access.
             _storageItemService = storageItemService;
         }
 
         // GET: api/Backend
         /// <summary>
-        /// Henter alt udstyr i databasen.<br/>
-        /// Ved succes returneres listen af genstande.<br/>
-        /// Ved fejl returneres en 500-statuskode med fejlbesked.
+        /// Retrieves all storage items from the database.
+        /// Returns 200 OK with the list of items on success.
+        /// Returns 500 Internal Server Error on failure.
         /// </summary>
-        /// <returns>En liste af <see cref="StorageItem"/>.</returns>
+        /// <returns>List of <see cref="StorageItem"/>.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<StorageItem>>> GetItems()
         {
@@ -44,32 +43,35 @@ namespace ReservationSystemWebAPI.Controllers
 
         // GET: api/Backend/5
         /// <summary>
-        /// Henter et enkelt stykke udstyr baseret på ID.<br/>
-        /// Returnerer 404 hvis ikke fundet.
+        /// Retrieves a single storage item by ID.
+        /// Returns 200 OK with the item if found.
+        /// Returns 404 Not Found if the item does not exist.
         /// </summary>
-        /// <param name="id">ID for genstanden der ønskes hentet.</param>
-        /// <returns>Et <see cref="StorageItem"/>-objekt.</returns>
+        /// <param name="id">ID of the item.</param>
+        /// <returns><see cref="StorageItem"/> object.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<StorageItem>> GetItem(int id)
         {
             try
             {
-                StorageItem udstyr = await _storageItemService.GetItemByIdAsync(id);
-                return Ok(udstyr);
+                StorageItem item = await _storageItemService.GetItemByIdAsync(id);
+                return Ok(item);
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message }); // "Ingen genstand fundet med det angivne ID."
             }
         }
 
         // POST: api/Backend
         /// <summary>
-        /// Opretter et nyt stykke udstyr i databasen.<br/>
-        /// Returnerer 201 Created ved succes.
+        /// Creates a new storage item in the database.
+        /// Returns 201 Created on success with the Location header pointing to the new resource.
+        /// Returns 400 Bad Request on validation error.
+        /// Returns 500 Internal Server Error on unexpected failure.
         /// </summary>
-        /// <param name="newItem">Den nye genstand der skal tilføjes.</param>
-        /// <returns>Statuskode og oprettet genstand.</returns>
+        /// <param name="newItem">DTO containing data for the new item.</param>
+        /// <returns>The newly created <see cref="StorageItem"/>.</returns>
         [HttpPost]
         public async Task<ActionResult<StorageItem>> CreateItem([FromBody] StorageItemCreateDto newItem)
         {
@@ -80,27 +82,30 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new { message = ex.Message }); // "Ugyldige data tilføjet."
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new { message = ex.Message }); // "Fejl ved oprettelse af genstand."
             }
-            
         }
 
         // PUT: api/Backend/5
         /// <summary>
-        /// Opdaterer et eksisterende stykke udstyr.<br/>
-        /// Returnerer 204 NoContent ved succes.
+        /// Updates an existing storage item by ID.
+        /// Returns 204 No Content on success.
+        /// Returns 400 Bad Request if URL ID and data ID do not match or if RowVersion format is invalid.
+        /// Returns 404 Not Found if the item does not exist.
+        /// Returns 409 Conflict if a concurrency conflict occurs.
+        /// Returns 500 Internal Server Error on unexpected failure.
         /// </summary>
-        /// <param name="id">ID på genstanden der skal opdateres.</param>
-        /// <param name="updatedItem">De nye data for genstanden, inkl. RowVersion for concurrency.</param>
-        /// <returns>Statuskode afhængigt af resultatet.</returns>
+        /// <param name="id">ID of the item to update.</param>
+        /// <param name="dto">DTO with updated data including RowVersion for concurrency.</param>
+        /// <returns>HTTP status code.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateItem(int id, [FromBody] StorageItemUpdateDto dto)
         {
-            if(id != dto.Id)
+            if (id != dto.Id)
             {
                 return BadRequest(new { message = "ID i URL matcher ikke ID i data" });
             }
@@ -108,15 +113,15 @@ namespace ReservationSystemWebAPI.Controllers
             try
             {
                 await _storageItemService.UpdateItemAsync(dto);
-                return NoContent(); // Status 204 if success
+                return NoContent();
             }
-            catch(DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException)
             {
                 return Conflict(new { message = "Opdatering mislykkedes, da en anden bruger har lavet ændringer. Genindlæs data og prøv igen." });
             }
-            catch(KeyNotFoundException ex)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message }); // "Genstanden blev ikke fundet."
             }
             catch (FormatException)
             {
@@ -124,17 +129,19 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new { message = ex.Message }); // "Fejl ved opdatering af genstand."
             }
         }
 
         // DELETE: api/Backend/5
         /// <summary>
-        /// Sletter udstyr baseret på ID.<br/>
-        /// Returnerer 204 NoContent ved succes.
+        /// Deletes a storage item by ID.
+        /// Returns 204 No Content on success.
+        /// Returns 404 Not Found if the item does not exist.
+        /// Returns 500 Internal Server Error on unexpected failure.
         /// </summary>
-        /// <param name="id">ID på den genstand der ønskes slettet.</param>
-        /// <returns>Statuskode afhængigt af resultatet.</returns>
+        /// <param name="id">ID of the item to delete.</param>
+        /// <returns>HTTP status code.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {
@@ -145,11 +152,11 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = ex.Message }); // "Genstanden blev ikke fundet."
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new { message = ex.Message }); // "Fejl ved sletning af genstand."
             }
         }
     }

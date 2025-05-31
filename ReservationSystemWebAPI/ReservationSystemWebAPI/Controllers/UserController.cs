@@ -17,12 +17,14 @@ namespace ReservationSystemWebAPI.Controllers
 
         public UserController(IUserService userService)
         {
+            // Inject user service to handle user-related operations
             _userService = userService;
         }
 
         /// <summary>
         /// Retrieves a list of all users in the system.
         /// </summary>
+        /// <returns>List of User entities.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
         {
@@ -33,6 +35,7 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (Exception ex)
             {
+                // Return 500 with Danish error message for user feedback
                 return StatusCode(500, $"Fejl under hentning af brugere: {ex.Message}");
             }
         }
@@ -40,6 +43,8 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Retrieves a single user by their unique ID.
         /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User entity or 404 if not found.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
@@ -50,6 +55,7 @@ namespace ReservationSystemWebAPI.Controllers
             }
             catch (KeyNotFoundException)
             {
+                // User not found
                 return NotFound($"Bruger med ID {id} blev ikke fundet.");
             }
             catch (Exception ex)
@@ -61,6 +67,8 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Creates a new user in the system.
         /// </summary>
+        /// <param name="user">User entity to create</param>
+        /// <returns>Created User entity with 201 status or error response.</returns>
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
@@ -82,6 +90,9 @@ namespace ReservationSystemWebAPI.Controllers
         /// <summary>
         /// Updates an existing user based on their ID, with optimistic concurrency control.
         /// </summary>
+        /// <param name="id">User ID to update</param>
+        /// <param name="dto">User update DTO containing new data and concurrency token</param>
+        /// <returns>NoContent on success or appropriate error response.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto dto)
         {
@@ -93,6 +104,7 @@ namespace ReservationSystemWebAPI.Controllers
             byte[] rowVersion;
             try
             {
+                // Convert RowVersion from Base64 string to byte array for concurrency check
                 rowVersion = Convert.FromBase64String(dto.RowVersion);
             }
             catch (FormatException)
@@ -131,10 +143,12 @@ namespace ReservationSystemWebAPI.Controllers
             }
         }
 
-
         /// <summary>
         /// Deletes an existing user by their ID.
         /// </summary>
+        /// <param name="id">User ID to delete</param>
+        /// <param name="dto">DTO containing concurrency token for optimistic concurrency control</param>
+        /// <returns>NoContent on success or appropriate error response.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id, [FromBody] UserDeleteDto dto)
         {
